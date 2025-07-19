@@ -1,6 +1,6 @@
 {
-  "name": "vercel-blob",
-  "repository": "https://github.com/vercel/examples.git",
+  "name": "preview-asr-evals",
+  "repository": "https://github.com/yoadsn/preview-asr-evals.git",
   "license": "MIT",
   "version": "0.0.0",
   "private": true,
