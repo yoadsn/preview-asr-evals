@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 
 export async function POST(
   request: Request,
-  { params }: { params: { sampleId: string } }
+  { params }: { params: Promise<{ sampleId: string }> }
 ) {
   const { sampleId } = await params;
   try {

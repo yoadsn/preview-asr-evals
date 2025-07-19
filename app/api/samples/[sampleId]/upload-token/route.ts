@@ -3,10 +3,10 @@ import { NextResponse } from 'next/server';
 
 export async function POST(
   request: Request,
-  { params }: { params: { sampleId: string } }
+  { params }: { params: Promise<{ sampleId: string }> }
 ): Promise<NextResponse> {
   const body = (await request.json()) as HandleUploadBody;
-  const { sampleId } = params;
+  const { sampleId } = await params;
 
   try {
     const jsonResponse = await handleUpload({

@@ -3,8 +3,9 @@ import { NextResponse } from 'next/server';
 
 export async function GET(
   request: Request,
-  { params }: { params: { projectId: string } }
+  { params }: { params: Promise<{ projectId: string }> }
 ) {
-  const samples = await getSamplesByProjectId(params.projectId);
+  const { projectId } = await params;
+  const samples = await getSamplesByProjectId(projectId);
   return NextResponse.json(samples);
 }

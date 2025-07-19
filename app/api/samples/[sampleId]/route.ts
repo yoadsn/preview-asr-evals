@@ -1,7 +1,7 @@
 import { getSampleById } from '@/lib/data';
 import { NextResponse } from 'next/server';
 
-export async function GET(request: Request, { params }: { params: { sampleId: string } }) {
+export async function GET(request: Request, { params }: { params: Promise<{ sampleId: string }> }) {
     const { sampleId } = await params;
     const sample = await getSampleById(sampleId);
     if (!sample) {

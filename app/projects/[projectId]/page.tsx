@@ -2,7 +2,7 @@ import { getProjectById, getSamplesByProjectId } from '@/lib/data';
 import { EvaluationProject, EvaluationSample } from '@/lib/models';
 import Link from 'next/link';
 
-export default async function ProjectPage({ params }: { params: { projectId: string } }) {
+export default async function ProjectPage({ params }: { params: Promise<{ projectId: string }> }) {
     const { projectId } = await params;
     const project: EvaluationProject | undefined = await getProjectById(projectId);
 

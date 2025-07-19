@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 
-export default async function SamplePreviewPage({ params }: { params: { sampleId: string, projectId: string } }) {
+export default async function SamplePreviewPage({ params }: { params: Promise<{ sampleId: string, projectId: string }> }) {
     const { sampleId, projectId } = await params;
     const [sample, project] = await Promise.all([
         getSampleById(sampleId),
