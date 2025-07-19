@@ -2,7 +2,14 @@
   "$schema": "https://turborepo.com/schema.json",
   "tasks": {
     "build": {
-      "outputs": [".next/**", "!.next/cache/**"]
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**"
+      ],
+      "env": [
+        "DB_DATABASE_URL",
+        "BLOB_READ_WRITE_TOKEN"
+      ]
     },
     "lint": {}
   }
