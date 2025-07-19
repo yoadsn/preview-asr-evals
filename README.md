@@ -103,9 +103,7 @@ pnpm install
 cp .env.example .env.local
 ```
 
-Configure the following variables in `.env.local`:
-- `DATABASE_URL`: Neon PostgreSQL connection string
-- `BLOB_READ_WRITE_TOKEN`: Vercel Blob storage token
+Configure the required variables in `.env.local` (see Environment Variables section below for details).
 
 4. Set up the database:
 ```bash
@@ -128,6 +126,15 @@ vercel --prod
 ```
 
 Ensure your Vercel project has the required environment variables configured in the dashboard.
+
+## Environment Variables
+
+### Required Variables
+- `DATABASE_URL`: Neon PostgreSQL connection string
+- `BLOB_READ_WRITE_TOKEN`: Vercel Blob storage token
+
+### Optional Variables
+- `UI_EDITABLE`: Set to "true" to enable editing features (Create New Project, Add New Sample, Edit buttons). Set to "false" or omit to hide these buttons for read-only mode. Default: "false"
 
 ## Data Model
 

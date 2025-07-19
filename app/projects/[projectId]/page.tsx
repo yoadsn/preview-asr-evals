@@ -5,6 +5,7 @@ import Link from 'next/link';
 export default async function ProjectPage({ params }: { params: Promise<{ projectId: string }> }) {
     const { projectId } = await params;
     const project: EvaluationProject | undefined = await getProjectById(projectId);
+    const isEditable = process.env.UI_EDITABLE === 'true';
 
     if (!project) {
         return (
@@ -63,9 +64,11 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
             <div className="w-full max-w-4xl mx-auto">
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-medium text-black">Samples</h2>
-                    <Link href={`/projects/${project.id}/samples/new`} className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                        Add New Sample
-                    </Link>
+                    {isEditable && (
+                        <Link href={`/projects/${project.id}/samples/new`} className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                            Add New Sample
+                        </Link>
+                    )}
                 </div>
                 <div className="space-y-4">
                     {samples.map((sample) => (
@@ -79,9 +82,11 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
                                 )}
                             </div>
                             <div className="flex space-x-2">
-                                <Link href={`/projects/${project.id}/samples/${sample.id}/edit`} className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
-                                    Edit
-                                </Link>
+                                {isEditable && (
+                                    <Link href={`/projects/${project.id}/samples/${sample.id}/edit`} className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
+                                        Edit
+                                    </Link>
+                                )}
                                 <Link href={`/projects/${project.id}/samples/${sample.id}`} className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                                     View
                                 </Link>
