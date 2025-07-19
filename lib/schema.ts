@@ -16,6 +16,7 @@ export const evaluationSamples = pgTable('evaluation_samples', {
   projectId: varchar('project_id', { length: 255 })
     .notNull()
     .references(() => evaluationProjects.id),
+  name: varchar('name', { length: 255 }),
   audioUri: varchar('audio_uri', { length: 255 }),
   data: jsonb('data').$type<AlignmentData | null>()
 });

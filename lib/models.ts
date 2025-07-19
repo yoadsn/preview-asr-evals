@@ -37,6 +37,7 @@ export interface AlignmentData {
 export interface EvaluationSample {
   id: string;
   projectId: string;
+  name: string | null;
   audioUri: string | null;
   data: AlignmentData | null;
   createdAt: Date;

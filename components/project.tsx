@@ -7,7 +7,7 @@ export default function Project({ project }: { project: EvaluationProject }) {
             <Link href={`/projects/${project.id}`}>
                 <h3 className="text-xl font-bold hover:underline">{project.name}</h3>
             </Link>
-            <p>{project.description}</p>
+            <p className="whitespace-pre-wrap">{project.description}</p>
         </div>
     )
 }

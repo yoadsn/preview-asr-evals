@@ -93,7 +93,7 @@ const AlignmentVisualization: React.FC<{ alignment: AlignmentResult }> = ({
         }
 
         return (
-            <div key={index} className="flex flex-col text-center mx-1">
+            <div key={index} className="flex flex-col text-center border-b border-gray-400 py-1">
                 <div className="py-1"><span className={refClassName}>{refContent}</span></div>
                 <div className="py-1"><span className={hypClassName}>{hypContent}</span></div>
             </div>
@@ -101,8 +101,10 @@ const AlignmentVisualization: React.FC<{ alignment: AlignmentResult }> = ({
     };
 
     return (
-        <div className="flex flex-row overflow-x-auto bg-gray-50 p-2 rounded-md border">
-            {processedWords.map(renderAlignmentOperation)}
+        <div className="bg-gray-50 p-2 rounded-md border" style={{ maxWidth: '70vw' }}>
+            <div className="flex flex-wrap gap-2px">
+                {processedWords.map(renderAlignmentOperation)}
+            </div>
         </div>
     );
 };

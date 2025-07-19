@@ -20,7 +20,7 @@ export async function createProject(name: string, description: string): Promise<
         name,
         description
     });
-    
+
     const [project] = await db.select().from(evaluationProjects).where(eq(evaluationProjects.id, id));
     return toEvaluationProject(project);
 }
@@ -35,13 +35,14 @@ export async function getProjects(): Promise<EvaluationProject[]> {
     return projects.map(toEvaluationProject);
 }
 
-export async function createSample(projectId: string): Promise<EvaluationSample> {
+export async function createSample(projectId: string, name?: string): Promise<EvaluationSample> {
     const id = `smp_${nanoid()}`;
     await db.insert(evaluationSamples).values({
         id,
-        projectId
+        projectId,
+        name: name || null
     });
-    
+
     const [sample] = await db.select().from(evaluationSamples).where(eq(evaluationSamples.id, id));
     return toEvaluationSample(sample);
 }
@@ -67,8 +68,15 @@ export async function updateSampleAudio(sampleId: string, audioUri: string) {
 }
 
 export async function updateSampleData(sampleId: string, data: AlignmentData) {
-  await db
-    .update(evaluationSamples)
-    .set({ data })
-    .where(eq(evaluationSamples.id, sampleId));
+    await db
+        .update(evaluationSamples)
+        .set({ data })
+        .where(eq(evaluationSamples.id, sampleId));
+}
+
+export async function updateSampleName(sampleId: string, name: string) {
+    await db
+        .update(evaluationSamples)
+        .set({ name })
+        .where(eq(evaluationSamples.id, sampleId));
 }

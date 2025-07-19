@@ -29,7 +29,9 @@ export default async function SamplePreviewPage({ params }: { params: Promise<{ 
                     </Link>
 
                     {/* Centered title */}
-                    <h1 className="text-2xl font-semibold text-black">Sample: {sample.id}</h1>
+                    <h1 className="text-2xl font-semibold text-black">
+                        Sample: {sample.name || sample.id}
+                    </h1>
 
                     {/* Empty right space for consistency */}
                     <div className="w-20"></div>
@@ -73,7 +75,38 @@ export default async function SamplePreviewPage({ params }: { params: Promise<{ 
                 <div dir="rtl" className="border rounded-lg p-6 bg-white shadow-sm">
                     <h2 className="text-xl font-medium mb-4 text-black">Alignment Visualization</h2>
                     {sample.data?.alignment ? (
-                        <AlignmentVisualization alignment={sample.data.alignment} />
+                        <div>
+                            {/* Metrics Section */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 rounded-md border">
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-red-600">
+                                        {(sample.data.alignment.wer * 100).toFixed(1)}%
+                                    </div>
+                                    <div className="text-sm text-gray-600">WER</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-yellow-600">
+                                        {sample.data.alignment.substitutions}
+                                    </div>
+                                    <div className="text-sm text-gray-600">Substitutions</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-red-600">
+                                        {sample.data.alignment.deletions}
+                                    </div>
+                                    <div className="text-sm text-gray-600">Deletions</div>
+                                </div>
+                                <div className="text-center">
+                                    <div className="text-2xl font-bold text-green-600">
+                                        {sample.data.alignment.insertions}
+                                    </div>
+                                    <div className="text-sm text-gray-600">Insertions</div>
+                                </div>
+                            </div>
+
+                            {/* Alignment Visualization */}
+                            <AlignmentVisualization alignment={sample.data.alignment} />
+                        </div>
                     ) : (
                         <div className="bg-gray-50 p-4 rounded-md border text-gray-500">
                             Not available

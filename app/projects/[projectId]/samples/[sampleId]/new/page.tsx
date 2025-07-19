@@ -10,6 +10,7 @@ export default function NewSampleFileUploadPage(props: any) {
     const params: { projectId: string, sampleId: string } = use(props.params);
     const { projectId, sampleId } = params;
     const [sample, setSample] = useState<EvaluationSample | null>(null);
+    const [sampleName, setSampleName] = useState('');
     const [jsonData, setJsonData] = useState('');
     const [isUploading, setIsUploading] = useState(false);
     const router = useRouter();
@@ -20,6 +21,7 @@ export default function NewSampleFileUploadPage(props: any) {
             if (response.ok) {
                 const fetchedSample = await response.json();
                 setSample(fetchedSample);
+                setSampleName(fetchedSample.name || '');
                 if (fetchedSample.data) {
                     setJsonData(JSON.stringify(fetchedSample.data, null, 2));
                 }
@@ -51,6 +53,28 @@ export default function NewSampleFileUploadPage(props: any) {
         }
     };
 
+    const handleNameUpdate = async () => {
+        if (!sampleName.trim()) {
+            alert('Please enter a name for the sample');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/samples/${sampleId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: sampleName.trim() }),
+            });
+            if (!response.ok) {
+                throw new Error('Failed to update sample name');
+            }
+            alert('Sample name updated successfully!');
+        } catch (error) {
+            console.error(error);
+            alert(error instanceof Error ? error.message : 'An unknown error occurred.');
+        }
+    };
+
     return (
         <main className="min-h-screen p-6">
             <Toaster />
@@ -78,6 +102,28 @@ export default function NewSampleFileUploadPage(props: any) {
             {sample && (
                 <div className="w-full max-w-4xl mx-auto">
                     <h2 className="text-xl font-medium mb-4 text-black">Upload Files for Sample: {sample.id}</h2>
+
+                    {/* Sample Name Section */}
+                    <div className="border p-4 rounded-lg mb-6">
+                        <h5 className="font-medium mb-2 text-black">Sample Name</h5>
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                className="flex-1 p-2 border rounded-md"
+                                placeholder="Enter sample name..."
+                                value={sampleName}
+                                onChange={(e) => setSampleName(e.target.value)}
+                            />
+                            <button
+                                onClick={handleNameUpdate}
+                                disabled={!sampleName.trim()}
+                                className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-400"
+                            >
+                                Save Name
+                            </button>
+                        </div>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div className="border p-4 rounded-lg">
                             <h5 className="font-medium mb-2 text-black">1. Upload Audio</h5>

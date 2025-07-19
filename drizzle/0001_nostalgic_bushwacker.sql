@@ -1,0 +1,1 @@
+ALTER TABLE "evaluation_samples" ADD COLUMN "name" varchar(255);
