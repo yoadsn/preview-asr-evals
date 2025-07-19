@@ -1,4 +1,4 @@
-import { jsonb, pgTable, text, varchar } from 'drizzle-orm/pg-core';
+import { index, jsonb, pgTable, text, varchar } from 'drizzle-orm/pg-core';
 import {
   type AlignmentData,
   type EvaluationProject,
@@ -19,7 +19,9 @@ export const evaluationSamples = pgTable('evaluation_samples', {
   name: varchar('name', { length: 255 }),
   audioUri: varchar('audio_uri', { length: 255 }),
   data: jsonb('data').$type<AlignmentData | null>()
-});
+}, (table) => [
+  index("idx_evaluation_samples_name").on(table.name),
+]);
 
 // Type inference helpers
 export type DrizzleProject = typeof evaluationProjects.$inferSelect;

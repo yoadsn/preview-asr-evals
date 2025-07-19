@@ -15,6 +15,13 @@
       "when": 1752922919451,
       "tag": "0001_nostalgic_bushwacker",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1752946289085,
+      "tag": "0002_thankful_peter_quill",
+      "breakpoints": true
     }
   ]
 }
