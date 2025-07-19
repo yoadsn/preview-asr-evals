@@ -1,17 +1,8 @@
+import AlignmentVisualization from '@/components/alignment-visualization';
 import { getProjectById, getSampleById } from '@/lib/data';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-async function getTextFileContent(uri: string | null) {
-    if (!uri) return null;
-    try {
-        const response = await fetch(uri);
-        if (!response.ok) return `Error fetching content: ${response.statusText}`;
-        return await response.text();
-    } catch (error) {
-        return `Error fetching content: ${error instanceof Error ? error.message : 'Unknown error'}`;
-    }
-}
 
 export default async function SamplePreviewPage({ params }: { params: { sampleId: string, projectId: string } }) {
     const { sampleId, projectId } = await params;
@@ -23,11 +14,6 @@ export default async function SamplePreviewPage({ params }: { params: { sampleId
     if (!sample) {
         notFound();
     }
-
-    const [referenceText, hypothesisText] = await Promise.all([
-        getTextFileContent(sample.referenceTextUri),
-        getTextFileContent(sample.hypothesisTextUri),
-    ]);
 
     return (
         <main className="relative flex min-h-screen flex-col items-center p-24">
@@ -41,18 +27,6 @@ export default async function SamplePreviewPage({ params }: { params: { sampleId
                 </Link>
             </div>
 
-            <div className="w-full max-w-4xl mb-8 text-sm text-gray-500">
-                <p>Created: {new Date(sample.createdAt).toLocaleString()}</p>
-                <p>Last Updated: {new Date(sample.updatedAt).toLocaleString()}</p>
-                {sample.metadata && (
-                    <div className="mt-2">
-                        <h3 className="font-semibold">Metadata:</h3>
-                        <pre className="bg-gray-50 p-2 rounded-md mt-1">
-                            {JSON.stringify(sample.metadata, null, 2)}
-                        </pre>
-                    </div>
-                )}
-            </div>
             <div className="w-full max-w-6xl">
                 <div className="mb-8 border rounded-lg p-6 bg-white shadow-sm">
                     <h2 className="text-2xl font-semibold mb-4 text-purple-600">Audio Sample</h2>
@@ -71,15 +45,30 @@ export default async function SamplePreviewPage({ params }: { params: { sampleId
                         </div>
                     )}
                 </div>
-                <div className="grid grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                     <div className="border rounded-lg p-6 bg-white shadow-sm">
                         <h2 className="text-2xl font-semibold mb-4 text-blue-600">Reference Text</h2>
-                        <pre className="bg-gray-50 p-4 rounded-md whitespace-pre-wrap min-h-[200px] border">{referenceText || 'Not available'}</pre>
+                        <p dir="rtl" className="text-gray-800 bg-gray-50 p-4 rounded-md border min-h-[100px]">
+                            {sample.data?.ref_text ?? 'Not available'}
+                        </p>
                     </div>
                     <div className="border rounded-lg p-6 bg-white shadow-sm">
                         <h2 className="text-2xl font-semibold mb-4 text-green-600">Hypothesis Text</h2>
-                        <pre className="bg-gray-50 p-4 rounded-md whitespace-pre-wrap min-h-[200px] border">{hypothesisText || 'Not available'}</pre>
+                        <p dir="rtl" className="text-gray-800 bg-gray-50 p-4 rounded-md border min-h-[100px]">
+                            {sample.data?.hyp_text ?? 'Not available'}
+                        </p>
                     </div>
+                </div>
+
+                <div dir="rtl" className="border rounded-lg p-6 bg-white shadow-sm">
+                    <h2 className="text-2xl font-semibold mb-4 text-gray-600">Alignment Visualization</h2>
+                    {sample.data?.alignment ? (
+                        <AlignmentVisualization alignment={sample.data.alignment} />
+                    ) : (
+                        <div className="bg-gray-50 p-4 rounded-md border text-gray-500">
+                            Not available
+                        </div>
+                    )}
                 </div>
             </div>
         </main>

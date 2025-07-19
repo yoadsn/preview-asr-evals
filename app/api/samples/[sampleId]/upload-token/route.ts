@@ -6,7 +6,7 @@ export async function POST(
   { params }: { params: { sampleId: string } }
 ): Promise<NextResponse> {
   const body = (await request.json()) as HandleUploadBody;
-  const { sampleId } = await params;
+  const { sampleId } = params;
 
   try {
     const jsonResponse = await handleUpload({
@@ -14,7 +14,7 @@ export async function POST(
       request,
       onBeforeGenerateToken: async (pathname) => {
         return {
-          allowedContentTypes: ['audio/mpeg', 'audio/wav', 'text/plain'],
+          allowedContentTypes: ['audio/mpeg', 'audio/wav'],
           tokenPayload: JSON.stringify({
             sampleId: sampleId,
           }),

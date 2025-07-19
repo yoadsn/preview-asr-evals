@@ -1,5 +1,9 @@
 import { jsonb, pgTable, text, varchar } from 'drizzle-orm/pg-core';
-import { type EvaluationProject, type EvaluationSample } from './models';
+import {
+  type AlignmentData,
+  type EvaluationProject,
+  type EvaluationSample
+} from './models';
 
 export const evaluationProjects = pgTable('evaluation_projects', {
   id: varchar('id', { length: 255 }).primaryKey(),
@@ -13,9 +17,7 @@ export const evaluationSamples = pgTable('evaluation_samples', {
     .notNull()
     .references(() => evaluationProjects.id),
   audioUri: varchar('audio_uri', { length: 255 }),
-  referenceTextUri: varchar('reference_text_uri', { length: 255 }),
-  hypothesisTextUri: varchar('hypothesis_text_uri', { length: 255 }),
-  metadata: jsonb('metadata').$type<Record<string, any> | null>()
+  data: jsonb('data').$type<AlignmentData | null>()
 });
 
 // Type inference helpers
@@ -34,7 +36,7 @@ export function toEvaluationProject(project: DrizzleProject): EvaluationProject 
 export function toEvaluationSample(sample: DrizzleSample): EvaluationSample {
   return {
     ...sample,
-    metadata: sample.metadata ?? null,
+    data: sample.data ?? null,
     createdAt: new Date(), // Since we don't have these in DB, use current date
     updatedAt: new Date()
   };

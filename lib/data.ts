@@ -1,8 +1,17 @@
 import { eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { db } from './db';
-import type { EvaluationProject, EvaluationSample } from './models';
-import { evaluationProjects, evaluationSamples, toEvaluationProject, toEvaluationSample } from './schema';
+import type {
+    AlignmentData,
+    EvaluationProject,
+    EvaluationSample
+} from './models';
+import {
+    evaluationProjects,
+    evaluationSamples,
+    toEvaluationProject,
+    toEvaluationSample
+} from './schema';
 
 export async function createProject(name: string, description: string): Promise<EvaluationProject> {
     const id = `prj_${nanoid()}`;
@@ -57,14 +66,9 @@ export async function updateSampleAudio(sampleId: string, audioUri: string) {
         .where(eq(evaluationSamples.id, sampleId));
 }
 
-export async function updateSampleReferenceText(sampleId: string, referenceTextUri: string) {
-    await db.update(evaluationSamples)
-        .set({ referenceTextUri })
-        .where(eq(evaluationSamples.id, sampleId));
-}
-
-export async function updateSampleHypothesisText(sampleId: string, hypothesisTextUri: string) {
-    await db.update(evaluationSamples)
-        .set({ hypothesisTextUri })
-        .where(eq(evaluationSamples.id, sampleId));
+export async function updateSampleData(sampleId: string, data: AlignmentData) {
+  await db
+    .update(evaluationSamples)
+    .set({ data })
+    .where(eq(evaluationSamples.id, sampleId));
 }
