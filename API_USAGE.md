@@ -145,11 +145,30 @@ curl -X POST "{BASE_URL}/api/samples/sample-uuid-here/upload-direct-audio" \
 
 #### Python Example:
 ```python
+import mimetypes
+
 def upload_audio(base_url, sample_id, audio_file_path):
     url = f"{base_url}/api/samples/{sample_id}/upload-direct-audio"
     
+    # Detect MIME type from file extension
+    mime_type, _ = mimetypes.guess_type(audio_file_path)
+    if mime_type is None:
+        # Default to audio/mpeg for unknown types
+        mime_type = 'audio/mpeg'
+    
     with open(audio_file_path, 'rb') as audio_file:
-        files = {'file': audio_file}
+        files = {'file': (audio_file_path, audio_file, mime_type)}
+        response = requests.post(url, files=files)
+    
+    response.raise_for_status()
+    return response.json()
+
+# Alternative approach - explicitly specify MIME type
+def upload_audio_explicit(base_url, sample_id, audio_file_path, mime_type='audio/mpeg'):
+    url = f"{base_url}/api/samples/{sample_id}/upload-direct-audio"
+    
+    with open(audio_file_path, 'rb') as audio_file:
+        files = {'file': (audio_file_path, audio_file, mime_type)}
         response = requests.post(url, files=files)
     
     response.raise_for_status()
@@ -159,6 +178,9 @@ def upload_audio(base_url, sample_id, audio_file_path):
 audio_result = upload_audio(base_url, sample_id, "/path/to/your/audio.mp3")
 audio_url = audio_result["url"]
 print(f"Uploaded audio to: {audio_url}")
+
+# Or with explicit MIME type
+audio_result = upload_audio_explicit(base_url, sample_id, "/path/to/your/audio.wav", "audio/wav")
 ```
 
 ### 4. Upload Sample Data
@@ -343,10 +365,18 @@ class ASREvaluationClient:
     
     def upload_audio(self, sample_id, audio_file_path):
         """Upload an audio file to a sample."""
+        import mimetypes
+        
         url = f"{self.base_url}/api/samples/{sample_id}/upload-direct-audio"
         
+        # Detect MIME type from file extension
+        mime_type, _ = mimetypes.guess_type(audio_file_path)
+        if mime_type is None:
+            # Default to audio/mpeg for unknown types
+            mime_type = 'audio/mpeg'
+        
         with open(audio_file_path, 'rb') as audio_file:
-            files = {'file': audio_file}
+            files = {'file': (audio_file_path, audio_file, mime_type)}
             response = requests.post(url, files=files)
         
         response.raise_for_status()
