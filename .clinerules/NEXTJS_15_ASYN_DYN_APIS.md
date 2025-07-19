@@ -1,5 +1,8 @@
 # Next.js v15 Dynamic APIs: Now Asynchronous
 
+
+BOTTOM LINE: NEXT.JS 15 NEEDS AWAIT TO ACCESS PARAMS (and some other dynamic values)
+
 ## Key Change Summary
 
 In Next.js 15, several commonly used APIs have been made **asynchronous** that were previously synchronous:
