@@ -80,3 +80,26 @@ export async function updateSampleName(sampleId: string, name: string) {
         .set({ name })
         .where(eq(evaluationSamples.id, sampleId));
 }
+
+export async function getSamplesByName(sampleName: string, excludeProjectId?: string): Promise<Array<{ sample: EvaluationSample; project: EvaluationProject }>> {
+    const query = db
+        .select({
+            sample: evaluationSamples,
+            project: evaluationProjects
+        })
+        .from(evaluationSamples)
+        .innerJoin(evaluationProjects, eq(evaluationSamples.projectId, evaluationProjects.id))
+        .where(eq(evaluationSamples.name, sampleName));
+
+    const results = await query;
+
+    // Filter out the current project if excludeProjectId is provided
+    const filteredResults = excludeProjectId
+        ? results.filter(result => result.project.id !== excludeProjectId)
+        : results;
+
+    return filteredResults.map(result => ({
+        sample: toEvaluationSample(result.sample),
+        project: toEvaluationProject(result.project)
+    }));
+}
