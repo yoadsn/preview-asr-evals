@@ -5,7 +5,7 @@ export async function POST(
   request: Request,
   { params }: { params: { sampleId: string } }
 ) {
-  const { sampleId } = params;
+  const { sampleId } = await params;
   try {
     const { data } = await request.json();
     if (!data) {
