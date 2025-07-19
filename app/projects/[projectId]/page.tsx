@@ -70,7 +70,14 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
                 <div className="space-y-4">
                     {samples.map((sample) => (
                         <div key={sample.id} className="p-4 border rounded-lg flex justify-between items-center">
-                            <span className="font-medium text-black">{sample.name || sample.id}</span>
+                            <div>
+                                <div className="font-medium text-black">{sample.name || sample.id}</div>
+                                {sample.data?.alignment?.wer !== undefined && (
+                                    <div className="text-sm text-gray-600">
+                                        WER: {(sample.data.alignment.wer * 100).toFixed(1)}%
+                                    </div>
+                                )}
+                            </div>
                             <div className="flex space-x-2">
                                 <Link href={`/projects/${project.id}/samples/${sample.id}/edit`} className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500">
                                     Edit
