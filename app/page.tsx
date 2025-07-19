@@ -1,65 +1,26 @@
-import Image from 'next/image'
-import Link from 'next/link'
-import ExpandingArrow from '@/components/expanding-arrow'
-import Uploader from '@/components/uploader'
-import { Toaster } from '@/components/toaster'
+import Project from '@/components/project';
+import { Toaster } from '@/components/toaster';
+import { getProjects } from '@/lib/data';
+import { EvaluationProject } from '@/lib/models';
+import Link from 'next/link';
 
-export default function Home() {
+export default async function Home() {
+  const projects: EvaluationProject[] = await getProjects();
+
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center">
+    <main className="relative flex min-h-screen flex-col items-center justify-center p-24">
       <Toaster />
-      <Link
-        href="https://vercel.com/templates/next.js/blob-starter"
-        className="group mt-20 sm:mt-0 rounded-full flex space-x-1 bg-white/30 shadow-sm ring-1 ring-gray-900/5 text-gray-600 text-sm font-medium px-10 py-2 hover:shadow-lg active:shadow-sm transition-all"
-      >
-        <p>Deploy your own to Vercel</p>
-        <ExpandingArrow />
-      </Link>
-      <h1 className="pt-4 pb-8 bg-gradient-to-br from-black via-[#171717] to-[#575757] bg-clip-text text-center text-4xl font-medium tracking-tight text-transparent md:text-7xl">
-        Blob on Vercel
-      </h1>
-      <div className="bg-white/30 p-12 shadow-xl ring-1 ring-gray-900/5 rounded-lg backdrop-blur-lg max-w-xl mx-auto w-full">
-        <Uploader />
-      </div>
-      <p className="font-light text-gray-600 w-full max-w-lg text-center mt-6">
-        <Link
-          href="https://vercel.com/blob"
-          className="font-medium underline underline-offset-4 hover:text-black transition-colors"
-        >
-          Vercel Blob
-        </Link>{' '}
-        demo. Built with{' '}
-        <Link
-          href="https://nextjs.org/docs"
-          className="font-medium underline underline-offset-4 hover:text-black transition-colors"
-        >
-          Next.js App Router
-        </Link>
-        .
-      </p>
-      <div className="sm:absolute sm:bottom-0 w-full px-20 py-10 flex justify-between">
-        <Link href="https://vercel.com">
-          <Image
-            src="/vercel.svg"
-            alt="Vercel Logo"
-            width={100}
-            height={24}
-            priority
-          />
-        </Link>
-        <Link
-          href="https://github.com/vercel/examples/tree/main/storage/blob-starter"
-          className="flex items-center space-x-2"
-        >
-          <Image
-            src="/github.svg"
-            alt="GitHub Logo"
-            width={24}
-            height={24}
-            priority
-          />
-          <p className="font-light">Source</p>
-        </Link>
+      <h1 className="text-4xl font-bold mb-8">ASR Evaluation</h1>
+      <div className="w-full max-w-4xl">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-2xl font-semibold">Projects</h2>
+          <Link href="/projects/new" className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+            Create New Project
+          </Link>
+        </div>
+        {projects.map((project) => (
+          <Project key={project.id} project={project} />
+        ))}
       </div>
     </main>
   )

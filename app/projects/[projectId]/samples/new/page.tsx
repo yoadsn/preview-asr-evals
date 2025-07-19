@@ -1,0 +1,8 @@
+import { createSample } from '@/lib/data';
+import { redirect } from 'next/navigation';
+
+export default async function NewSamplePage({ params }: { params: { projectId: string } }) {
+    const { projectId } = params;
+    const sample = await createSample(projectId);
+    redirect(`/projects/${projectId}/samples/${sample.id}/new`);
+}
