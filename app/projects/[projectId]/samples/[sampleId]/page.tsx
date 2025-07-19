@@ -16,20 +16,30 @@ export default async function SamplePreviewPage({ params }: { params: { sampleId
     }
 
     return (
-        <main className="relative flex min-h-screen flex-col items-center p-24">
-            <div className="w-full max-w-4xl mb-8 flex justify-between items-center">
-                <h1 className="text-4xl font-bold">Sample Preview: {sample.id}</h1>
-                <Link
-                    href={`/projects/${projectId}`}
-                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-                >
-                    ← Back to Project
-                </Link>
+        <main className="min-h-screen p-6">
+            {/* Top section with consistent layout */}
+            <div className="w-full max-w-6xl mx-auto mb-8">
+                <div className="flex items-center justify-between mb-6">
+                    {/* Back button on left */}
+                    <Link
+                        href={`/projects/${projectId}`}
+                        className="text-sm text-gray-600 hover:text-gray-800 hover:underline"
+                    >
+                        ← Back to Project
+                    </Link>
+
+                    {/* Centered title */}
+                    <h1 className="text-2xl font-semibold text-black">Sample: {sample.id}</h1>
+
+                    {/* Empty right space for consistency */}
+                    <div className="w-20"></div>
+                </div>
             </div>
 
-            <div className="w-full max-w-6xl">
+            {/* Content section */}
+            <div className="w-full max-w-6xl mx-auto">
                 <div className="mb-8 border rounded-lg p-6 bg-white shadow-sm">
-                    <h2 className="text-2xl font-semibold mb-4 text-purple-600">Audio Sample</h2>
+                    <h2 className="text-xl font-medium mb-4 text-black">Audio Sample</h2>
                     {sample.audioUri ? (
                         <div className="bg-gray-50 p-4 rounded-md border">
                             <audio
@@ -47,13 +57,13 @@ export default async function SamplePreviewPage({ params }: { params: { sampleId
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                     <div className="border rounded-lg p-6 bg-white shadow-sm">
-                        <h2 className="text-2xl font-semibold mb-4 text-blue-600">Reference Text</h2>
+                        <h2 className="text-xl font-medium mb-4 text-black">Reference Text</h2>
                         <p dir="rtl" className="text-gray-800 bg-gray-50 p-4 rounded-md border min-h-[100px]">
                             {sample.data?.ref_text ?? 'Not available'}
                         </p>
                     </div>
                     <div className="border rounded-lg p-6 bg-white shadow-sm">
-                        <h2 className="text-2xl font-semibold mb-4 text-green-600">Hypothesis Text</h2>
+                        <h2 className="text-xl font-medium mb-4 text-black">Hypothesis Text</h2>
                         <p dir="rtl" className="text-gray-800 bg-gray-50 p-4 rounded-md border min-h-[100px]">
                             {sample.data?.hyp_text ?? 'Not available'}
                         </p>
@@ -61,7 +71,7 @@ export default async function SamplePreviewPage({ params }: { params: { sampleId
                 </div>
 
                 <div dir="rtl" className="border rounded-lg p-6 bg-white shadow-sm">
-                    <h2 className="text-2xl font-semibold mb-4 text-gray-600">Alignment Visualization</h2>
+                    <h2 className="text-xl font-medium mb-4 text-black">Alignment Visualization</h2>
                     {sample.data?.alignment ? (
                         <AlignmentVisualization alignment={sample.data.alignment} />
                     ) : (

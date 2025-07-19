@@ -6,7 +6,7 @@ import { EvaluationSample } from '@/lib/models';
 import { useRouter } from 'next/navigation';
 import { use, useEffect, useState } from 'react';
 
-export default function NewSampleFileUploadPage(props: any) {
+export default function EditSamplePage(props: any) {
     const params: { projectId: string, sampleId: string } = use(props.params);
     const { projectId, sampleId } = params;
     const [sample, setSample] = useState<EvaluationSample | null>(null);
@@ -67,7 +67,7 @@ export default function NewSampleFileUploadPage(props: any) {
                     </button>
 
                     {/* Centered title */}
-                    <h1 className="text-2xl font-semibold text-black">Create New Sample</h1>
+                    <h1 className="text-2xl font-semibold text-black">Edit Sample</h1>
 
                     {/* Empty right space for consistency */}
                     <div className="w-20"></div>
