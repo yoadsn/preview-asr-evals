@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { nanoid } from 'nanoid';
 import { db } from './db';
 import type {
@@ -31,7 +31,7 @@ export async function getProjectById(id: string): Promise<EvaluationProject | un
 }
 
 export async function getProjects(): Promise<EvaluationProject[]> {
-    const projects = await db.select().from(evaluationProjects);
+    const projects = await db.select().from(evaluationProjects).orderBy(desc(evaluationProjects.createdAt));
     return projects.map(toEvaluationProject);
 }
 

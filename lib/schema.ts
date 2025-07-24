@@ -1,4 +1,4 @@
-import { index, jsonb, pgTable, text, varchar } from 'drizzle-orm/pg-core';
+import { index, jsonb, pgTable, text, timestamp, varchar } from 'drizzle-orm/pg-core';
 import {
   type AlignmentData,
   type EvaluationProject,
@@ -8,7 +8,9 @@ import {
 export const evaluationProjects = pgTable('evaluation_projects', {
   id: varchar('id', { length: 255 }).primaryKey(),
   name: varchar('name', { length: 255 }).notNull(),
-  description: text('description')
+  description: text('description'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
 });
 
 export const evaluationSamples = pgTable('evaluation_samples', {
@@ -18,7 +20,9 @@ export const evaluationSamples = pgTable('evaluation_samples', {
     .references(() => evaluationProjects.id),
   name: varchar('name', { length: 255 }),
   audioUri: varchar('audio_uri', { length: 255 }),
-  data: jsonb('data').$type<AlignmentData | null>()
+  data: jsonb('data').$type<AlignmentData | null>(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
 }, (table) => [
   index("idx_evaluation_samples_name").on(table.name),
 ]);
@@ -31,8 +35,8 @@ export type DrizzleSample = typeof evaluationSamples.$inferSelect;
 export function toEvaluationProject(project: DrizzleProject): EvaluationProject {
   return {
     ...project,
-    createdAt: new Date(), // Since we don't have these in DB, use current date
-    updatedAt: new Date()
+    createdAt: project.createdAt,
+    updatedAt: project.updatedAt
   };
 }
 
@@ -40,7 +44,7 @@ export function toEvaluationSample(sample: DrizzleSample): EvaluationSample {
   return {
     ...sample,
     data: sample.data ?? null,
-    createdAt: new Date(), // Since we don't have these in DB, use current date
-    updatedAt: new Date()
+    createdAt: sample.createdAt,
+    updatedAt: sample.updatedAt
   };
 }
