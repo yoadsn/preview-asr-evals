@@ -1,4 +1,5 @@
 import AlignmentVisualization from '@/components/alignment-visualization';
+import SubstitutionsList from '@/components/substitutions-list';
 import { getProjectById, getSampleById, getSamplesByName } from '@/lib/data';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -104,6 +105,11 @@ export default async function SamplePreviewPage({ params }: { params: Promise<{ 
                         </div>
                     )}
                 </div>
+
+                {/* Substitutions List Section */}
+                {sample.data?.alignment && (
+                    <SubstitutionsList alignment={sample.data.alignment} />
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
                     <div className="border rounded-lg p-6 bg-white shadow-sm">
