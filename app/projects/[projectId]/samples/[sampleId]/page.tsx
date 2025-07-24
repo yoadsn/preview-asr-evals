@@ -161,10 +161,12 @@ export default async function SamplePreviewPage({ params }: { params: Promise<{ 
                             {otherProjectSamples.map(({ sample: otherSample, project: otherProject }) => (
                                 <div key={`${otherProject.id}-${otherSample.id}`} className="border rounded-md p-4 bg-gray-50">
                                     <div className="flex items-center justify-between">
-                                        <div>
+                                        <div className="flex items-center gap-3">
                                             <h3 className="font-medium text-black">{otherProject.name}</h3>
-                                            {otherProject.description && (
-                                                <p className="text-sm text-gray-600 mt-1">{otherProject.description}</p>
+                                            {otherSample.data?.alignment?.wer !== undefined && (
+                                                <span className="text-red-600 font-medium">
+                                                    {(otherSample.data.alignment.wer * 100).toFixed(1)}% WER
+                                                </span>
                                             )}
                                         </div>
                                         <Link
