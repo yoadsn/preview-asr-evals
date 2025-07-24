@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { EvaluationProject, EvaluationSample } from '@/lib/models';
 import Link from 'next/link';
@@ -12,7 +12,7 @@ interface SortState {
   direction: SortDirection;
 }
 
-export default function ComparePage() {
+function ComparePageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [projectsWithSamples, setProjectsWithSamples] = useState<Array<{
@@ -279,5 +279,21 @@ export default function ComparePage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function ComparePage() {
+  return (
+    <Suspense fallback={
+      <main className="min-h-screen p-6">
+        <div className="w-full max-w-6xl mx-auto">
+          <div className="text-center py-12">
+            <p className="text-gray-500">Loading comparison...</p>
+          </div>
+        </div>
+      </main>
+    }>
+      <ComparePageContent />
+    </Suspense>
   );
 }
