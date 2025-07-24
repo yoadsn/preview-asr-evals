@@ -1,15 +1,16 @@
 import AlignmentVisualization from '@/components/alignment-visualization';
 import SubstitutionsList from '@/components/substitutions-list';
-import { getProjectById, getSampleById, getSamplesByName } from '@/lib/data';
+import { getProjectById, getSampleById, getSamplesByName, getSamplesByProjectId } from '@/lib/data';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 
 export default async function SamplePreviewPage({ params }: { params: Promise<{ sampleId: string, projectId: string }> }) {
     const { sampleId, projectId } = await params;
-    const [sample, project] = await Promise.all([
+    const [sample, project, projectSamples] = await Promise.all([
         getSampleById(sampleId),
-        getProjectById(projectId)
+        getProjectById(projectId),
+        getSamplesByProjectId(projectId)
     ]);
 
     if (!sample) {
@@ -20,6 +21,11 @@ export default async function SamplePreviewPage({ params }: { params: Promise<{ 
     const otherProjectSamples = sample.name
         ? await getSamplesByName(sample.name, projectId)
         : [];
+
+    // Filter out current sample and only show other samples from the same project that have WER data
+    const otherSamplesInProject = projectSamples
+        .filter(s => s.id !== sampleId && s.data?.alignment?.wer !== undefined)
+        .sort((a, b) => (a.data?.alignment?.wer || 0) - (b.data?.alignment?.wer || 0));
 
     return (
         <main className="min-h-screen p-6">
@@ -125,6 +131,27 @@ export default async function SamplePreviewPage({ params }: { params: Promise<{ 
                         </p>
                     </div>
                 </div>
+
+                {/* Mini Project Sample Navigator */}
+                {otherSamplesInProject.length > 0 && (
+                    <div className="border rounded-lg p-6 bg-white shadow-sm mb-8">
+                        <h2 className="text-xl font-medium mb-4 text-black">Other Samples in This Project</h2>
+                        <div className="flex flex-wrap gap-2">
+                            {otherSamplesInProject.map((otherSample) => (
+                                <Link
+                                    key={otherSample.id}
+                                    href={`/projects/${projectId}/samples/${otherSample.id}`}
+                                    className="inline-flex items-center gap-2 px-3 py-2 bg-gray-100 hover:bg-blue-100 border border-gray-200 hover:border-blue-300 rounded-full text-sm transition-colors"
+                                >
+                                    <span className="text-gray-800">{otherSample.name || otherSample.id}</span>
+                                    <span className="text-red-600 font-medium">
+                                        {((otherSample.data?.alignment?.wer ?? 0) * 100).toFixed(1)}%
+                                    </span>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* See On Other Projects Section */}
                 {otherProjectSamples.length > 0 && (
