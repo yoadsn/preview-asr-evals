@@ -103,3 +103,11 @@ export async function getSamplesByName(sampleName: string, excludeProjectId?: st
         project: toEvaluationProject(result.project)
     }));
 }
+
+export async function deleteProject(id: string): Promise<void> {
+    // First delete all samples associated with this project
+    await db.delete(evaluationSamples).where(eq(evaluationSamples.projectId, id));
+    
+    // Then delete the project itself
+    await db.delete(evaluationProjects).where(eq(evaluationProjects.id, id));
+}

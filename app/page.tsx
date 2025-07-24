@@ -1,4 +1,4 @@
-import Project from '@/components/project';
+import ProjectList from '@/components/project-list';
 import { Toaster } from '@/components/toaster';
 import { getProjects } from '@/lib/data';
 import { EvaluationProject } from '@/lib/models';
@@ -36,9 +36,7 @@ export default async function Home() {
             </Link>
           )}
         </div>
-        {projects.map((project) => (
-          <Project key={project.id} project={project} />
-        ))}
+        <ProjectList initialProjects={projects} isEditable={isEditable} />
       </div>
     </main>
   )
