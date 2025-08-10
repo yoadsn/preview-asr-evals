@@ -35,6 +35,9 @@ export default async function Home() {
               Create New Project
             </Link>
           )}
+          <Link href="/transcribe" className='underline'>
+            Transcribe Online
+          </Link>
         </div>
         <ProjectList initialProjects={projects} isEditable={isEditable} />
       </div>
