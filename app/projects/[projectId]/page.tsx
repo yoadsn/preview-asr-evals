@@ -10,7 +10,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
 
     if (!project) {
         return (
-            <main className="min-h-screen p-6">
+            <main className="min-h-screen p-6 bg-gradient-to-b from-gray-50 to-white">
                 {/* Top section with consistent layout */}
                 <div className="w-full max-w-4xl mx-auto mb-8">
                     <div className="flex items-center justify-between mb-6">
@@ -36,7 +36,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
     const samples: EvaluationSample[] = await getSamplesByProjectId(projectId);
 
     return (
-        <main className="min-h-screen p-6">
+        <main className="min-h-screen p-6 bg-gradient-to-b from-gray-50 to-white">
             {/* Top section with consistent layout */}
             <div className="w-full max-w-4xl mx-auto mb-8">
                 <div className="flex items-center justify-between mb-6">
@@ -71,10 +71,10 @@ export default async function ProjectPage({ params }: { params: Promise<{ projec
                         </Link>
                     )}
                 </div>
-                <SamplesTable 
-                    samples={samples} 
-                    projectId={project.id} 
-                    isEditable={isEditable} 
+                <SamplesTable
+                    samples={samples}
+                    projectId={project.id}
+                    isEditable={isEditable}
                 />
             </div>
         </main>

@@ -16,6 +16,7 @@
   "dependencies": {
     "@neondatabase/serverless": "^1.0.1",
     "@vercel/blob": "^1.0.0",
+    "@workos-inc/authkit-nextjs": "^2.4.6",
     "dotenv": "^17.2.0",
     "drizzle-kit": "^0.31.4",
     "drizzle-orm": "^0.44.3",

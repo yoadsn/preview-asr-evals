@@ -1,46 +1,47 @@
-import ProjectList from '@/components/project-list';
-import { Toaster } from '@/components/toaster';
-import { getProjects } from '@/lib/data';
-import { EvaluationProject } from '@/lib/models';
-import Link from 'next/link';
+import Header from "@/components/header";
 
-export default async function Home() {
-  const projects: EvaluationProject[] = await getProjects();
-  const isEditable = process.env.UI_EDITABLE === 'true';
+export default function Home() {
+    return (
+        <>
+            <Header />
+            <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+                <div className="container mx-auto px-4 py-16">
+                    <div className="max-w-4xl mx-auto text-center">
+                        <h1 className="text-4xl font-bold text-gray-900 mb-4">
+                            YI Whisper Training
+                        </h1>
+                        <p className="text-xl text-gray-600 mb-12">
+                            Welcome to the YI Whisper training project system
+                        </p>
 
-  return (
-    <main className="min-h-screen p-6">
-      <Toaster />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+                            <a
+                                href="/projects"
+                                className="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200"
+                            >
+                                <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+                                    View ASR Eval Projects
+                                </h2>
+                                <p className="text-gray-600">
+                                    Browse and manage your ASR evaluation projects and results
+                                </p>
+                            </a>
 
-      {/* Top section with consistent layout */}
-      <div className="w-full max-w-4xl mx-auto mb-8">
-        <div className="flex items-center justify-between mb-6">
-          {/* Empty left space for consistency */}
-          <div className="w-20"></div>
-
-          {/* Centered title */}
-          <h1 className="text-2xl font-semibold text-black">ASR Evaluation</h1>
-
-          {/* Empty right space for consistency */}
-          <div className="w-20"></div>
-        </div>
-      </div>
-
-      {/* Content section */}
-      <div className="w-full max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-medium text-black">Projects</h2>
-          {isEditable && (
-            <Link href="/projects/new" className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-              Create New Project
-            </Link>
-          )}
-          <Link href="/transcribe" className='underline'>
-            Transcribe Online
-          </Link>
-        </div>
-        <ProjectList initialProjects={projects} isEditable={isEditable} />
-      </div>
-    </main>
-  )
+                            <a
+                                href="/transcribe"
+                                className="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200"
+                            >
+                                <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+                                    Transcribe Audio
+                                </h2>
+                                <p className="text-gray-600">
+                                    Use YI Whisper models to transcribe your audio files
+                                </p>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </>
+    );
 }

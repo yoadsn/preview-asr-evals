@@ -1,4 +1,5 @@
 import { Inter } from 'next/font/google'
+import { AuthKitProvider } from '@workos-inc/authkit-nextjs/components';
 import './globals.css'
 
 export const metadata = {
@@ -19,7 +20,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.variable}>{children}</body>
+      <body className={inter.variable}>
+        <AuthKitProvider>{children}</AuthKitProvider>
+      </body>
     </html>
   )
 }

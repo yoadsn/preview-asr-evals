@@ -28,7 +28,7 @@ export default async function SamplePreviewPage({ params }: { params: Promise<{ 
         .sort((a, b) => (a.data?.alignment?.wer || 0) - (b.data?.alignment?.wer || 0));
 
     return (
-        <main className="min-h-screen p-6">
+        <main className="min-h-screen p-6 bg-gradient-to-b from-gray-50 to-white">
             {/* Top section with consistent layout */}
             <div className="w-full max-w-6xl mx-auto mb-8">
                 <div className="flex items-center justify-between mb-6">

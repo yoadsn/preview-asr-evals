@@ -76,7 +76,7 @@ export default function NewSampleFileUploadPage(props: any) {
     };
 
     return (
-        <main className="min-h-screen p-6">
+        <main className="min-h-screen p-6 bg-gradient-to-b from-gray-50 to-white">
             <Toaster />
 
             {/* Top section with consistent layout */}

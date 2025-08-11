@@ -21,9 +21,9 @@ function ComparePageContent() {
   }>>([]);
   const [loading, setLoading] = useState(true);
   const [sortState, setSortState] = useState<SortState>({ projectId: null, direction: null });
-  
+
   const projectIds = searchParams.get('projects')?.split(',') || [];
-  
+
   useEffect(() => {
     if (projectIds.length < 2) {
       router.push('/');
@@ -38,9 +38,9 @@ function ComparePageContent() {
               fetch(`/api/projects/${projectId}`),
               fetch(`/api/projects/${projectId}/samples`)
             ]);
-            
+
             if (!projectResponse.ok || !samplesResponse.ok) return null;
-            
+
             const project = await projectResponse.json();
             const samples = await samplesResponse.json();
             return { project, samples };
@@ -71,7 +71,7 @@ function ComparePageContent() {
 
   // Find samples that match by name across projects
   const sampleNameMap = new Map<string, Map<string, EvaluationSample>>();
-  
+
   projectsWithSamples.forEach(({ project, samples }) => {
     samples.forEach((sample) => {
       if (sample.name) {
@@ -93,20 +93,20 @@ function ComparePageContent() {
     commonSamples.sort(([, samplesA], [, samplesB]) => {
       const sampleA = samplesA.get(sortState.projectId!);
       const sampleB = samplesB.get(sortState.projectId!);
-      
+
       // Handle missing samples (put them at the end)
       if (!sampleA && !sampleB) return 0;
       if (!sampleA) return 1;
       if (!sampleB) return -1;
-      
+
       // Handle missing WER data (put them at the end)
       const werA = sampleA.data?.alignment.wer;
       const werB = sampleB.data?.alignment.wer;
-      
+
       if (werA === undefined && werB === undefined) return 0;
       if (werA === undefined) return 1;
       if (werB === undefined) return -1;
-      
+
       const diff = werA - werB;
       return sortState.direction === 'asc' ? diff : -diff;
     });
@@ -116,9 +116,9 @@ function ComparePageContent() {
     setSortState(prevState => {
       if (prevState.projectId === projectId) {
         // Cycle through: asc -> desc -> none
-        const nextDirection: SortDirection = 
+        const nextDirection: SortDirection =
           prevState.direction === null ? 'asc' :
-          prevState.direction === 'asc' ? 'desc' : null;
+            prevState.direction === 'asc' ? 'desc' : null;
         return { projectId: nextDirection ? projectId : null, direction: nextDirection };
       } else {
         // New column, start with asc
@@ -142,7 +142,7 @@ function ComparePageContent() {
 
   if (loading) {
     return (
-      <main className="min-h-screen p-6">
+      <main className="min-h-screen p-6 bg-gradient-to-b from-gray-50 to-white">
         <div className="w-full max-w-6xl mx-auto">
           <div className="text-center py-12">
             <p className="text-gray-500">Loading comparison...</p>
@@ -153,7 +153,7 @@ function ComparePageContent() {
   }
 
   return (
-    <main className="min-h-screen p-6">
+    <main className="min-h-screen p-6 bg-gradient-to-b from-gray-50 to-white">
       {/* Header */}
       <div className="w-full max-w-6xl mx-auto mb-8">
         <div className="flex items-center justify-between mb-6">
@@ -215,10 +215,10 @@ function ComparePageContent() {
                       sample,
                       wer: sample.data!.alignment.wer
                     }));
-                  
+
                   const bestWER = samplesWithWER.length > 0 ? Math.min(...samplesWithWER.map(s => s.wer)) : null;
                   const worstWER = samplesWithWER.length > 0 ? Math.max(...samplesWithWER.map(s => s.wer)) : null;
-                  
+
                   // Only highlight if there are multiple different WER values
                   const shouldHighlight = samplesWithWER.length > 1 && bestWER !== worstWER;
 
@@ -230,7 +230,7 @@ function ComparePageContent() {
                       {projectsWithSamples.map(({ project }) => {
                         const sample = projectSamples.get(project.id);
                         const wer = sample?.data?.alignment.wer;
-                        
+
                         // Determine background color
                         let bgColor = '';
                         if (shouldHighlight && wer !== undefined) {
@@ -240,7 +240,7 @@ function ComparePageContent() {
                             bgColor = 'bg-red-100';
                           }
                         }
-                        
+
                         return (
                           <td
                             key={project.id}
