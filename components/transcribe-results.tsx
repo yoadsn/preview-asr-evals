@@ -20,27 +20,27 @@ interface TranscribeResultsProps {
         status: string;
         error?: any;
     };
+    segments: any[];
 }
 
-type ViewMode = 'text' | 'vtt' | 'json';
+type ViewMode = 'text' | 'vtt';// | 'json';
 
-export function TranscribeResults({ result }: TranscribeResultsProps) {
+export function TranscribeResults({ result, segments }: TranscribeResultsProps) {
     const [copied, setCopied] = useState(false);
     const [viewMode, setViewMode] = useState<ViewMode>('text');
 
     const getContentToCopy = () => {
-        if (!result.output || !Array.isArray(result.output)) {
-            return JSON.stringify(result.output, null, 2);
+        if (!segments || !Array.isArray(segments)) {
+            return JSON.stringify(result, null, 2);
         }
 
         switch (viewMode) {
             case 'text':
-                return result.output.map(segment => segment.text).join('\n');
+                return segments.map(segment => segment.text).join('\n');
             case 'vtt':
-                return generateVTT(result.output);
-            case 'json':
+                return generateVTT(segments);
             default:
-                return JSON.stringify(result.output, null, 2);
+                return JSON.stringify(result, null, 2);
         }
     };
 
@@ -98,10 +98,12 @@ export function TranscribeResults({ result }: TranscribeResultsProps) {
         return `${(ms / 1000).toFixed(1)}s`;
     };
 
+    const isCompleted = result.status === 'COMPLETED';
+
     return (
         <div className="space-y-6">
             {/* Performance Metrics */}
-            {(result.delayTime !== undefined || result.executionTime !== undefined) && (
+            {isCompleted && (result.delayTime !== undefined || result.executionTime !== undefined) && (
                 <div className="grid grid-cols-2 gap-4 p-4 bg-gray-50 rounded-md">
                     {result.delayTime !== undefined && (
                         <div>
@@ -144,15 +146,6 @@ export function TranscribeResults({ result }: TranscribeResultsProps) {
                             >
                                 VTT
                             </button>
-                            <button
-                                onClick={() => setViewMode('json')}
-                                className={`px-3 py-1 text-xs font-medium rounded-r-md border ${viewMode === 'json'
-                                    ? 'bg-blue-600 text-white border-blue-600'
-                                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                                    }`}
-                            >
-                                JSON
-                            </button>
                         </div>
                         <button
                             onClick={handleCopy}
@@ -179,11 +172,11 @@ export function TranscribeResults({ result }: TranscribeResultsProps) {
                 </div>
 
                 {/* Render based on view mode */}
-                {result.output && Array.isArray(result.output) ? (
+                {segments && Array.isArray(segments) ? (
                     <>
                         {viewMode === 'text' && (
                             <div className="space-y-1 p-4 border border-gray-300 rounded-md bg-white max-h-96 overflow-y-auto divide-solid divide-black divide-x-2" dir="rtl">
-                                {result.output.map((segment, index) => (
+                                {segments.map((segment, index) => (
                                     <span
                                         key={index}
                                         className="rounded text-sm px-0.5"
@@ -198,9 +191,9 @@ export function TranscribeResults({ result }: TranscribeResultsProps) {
                         )}
 
                         {viewMode === 'vtt' && (
-                            <div className="space-y-2 p-4 border border-gray-300 rounded-md bg-white max-h-96 overflow-y-auto">
+                            <div className="space-y-2 p-4 border border-gray-300 rounded-md bg-white max-h-96 overflow-y-auto" dir="rtl">
                                 <div className="text-xs font-medium text-gray-500 mb-2">WEBVTT</div>
-                                {result.output.map((segment, index) => (
+                                {segments.map((segment, index) => (
                                     <div key={index} className="mb-4">
                                         <div className="text-xs text-gray-600 font-mono">
                                             {index + 1}
@@ -211,8 +204,7 @@ export function TranscribeResults({ result }: TranscribeResultsProps) {
                                         <div
                                             className="text-sm p-2 rounded mt-1"
                                             style={{
-                                                backgroundColor: getConfidenceColor(segment.extra_data.avg_logprob),
-                                                color: segment.extra_data.avg_logprob < -5 ? 'white' : 'black'
+                                                backgroundColor: getConfidenceLogProbColor(segment.extra_data.avg_logprob),
                                             }}
                                         >
                                             {segment.text}
@@ -220,15 +212,6 @@ export function TranscribeResults({ result }: TranscribeResultsProps) {
                                     </div>
                                 ))}
                             </div>
-                        )}
-
-                        {viewMode === 'json' && (
-                            <textarea
-                                value={JSON.stringify(result.output, null, 2)}
-                                readOnly
-                                className="w-full h-96 p-4 border border-gray-300 rounded-md bg-gray-50 font-mono text-sm focus:ring-blue-500 focus:border-blue-500 resize-vertical"
-                                placeholder="Transcription results will appear here..."
-                            />
                         )}
                     </>
                 ) : (
@@ -242,7 +225,7 @@ export function TranscribeResults({ result }: TranscribeResultsProps) {
             </div>
 
             {/* Confidence Legend */}
-            {result.output && Array.isArray(result.output) && viewMode !== 'json' && (
+            {isCompleted && (
                 <div className="space-y-2">
                     <h3 className="text-sm font-medium text-gray-700">Confidence Level</h3>
                     <div className="flex items-center space-x-4 text-xs text-gray-600">

@@ -5,11 +5,11 @@ import { useEffect, useState } from 'react';
 interface TranscribeProgressProps {
     jobId: string;
     trackingProgress: boolean;
-    onStatusUpdate: (status: any) => void;
-    onError: (error: string) => void;
+    onStatusUpdateAction: (status: any) => void;
+    onErrorAction: (error: string) => void;
 }
 
-export function TranscribeProgress({ jobId, trackingProgress, onStatusUpdate, onError }: TranscribeProgressProps) {
+export function TranscribeProgress({ jobId, trackingProgress, onStatusUpdateAction, onErrorAction }: TranscribeProgressProps) {
     const [currentStatus, setCurrentStatus] = useState<string>('IN_QUEUE');
     const [delayTime, setDelayTime] = useState<number | null>(null);
     const [executionTime, setExecutionTime] = useState<number | null>(null);
@@ -27,7 +27,6 @@ export function TranscribeProgress({ jobId, trackingProgress, onStatusUpdate, on
 
         eventSource.onmessage = (event) => {
             try {
-                console.log('got message')
                 const data = JSON.parse(event.data);
                 console.log('SSE message:', data);
             } catch (error) {
@@ -37,36 +36,33 @@ export function TranscribeProgress({ jobId, trackingProgress, onStatusUpdate, on
 
         eventSource.addEventListener('status', (event) => {
             try {
-                console.log('got status')
                 const statusData = JSON.parse(event.data);
                 setCurrentStatus(statusData.status);
                 setDelayTime(statusData.delayTime || null);
                 setExecutionTime(statusData.executionTime || null);
-                onStatusUpdate(statusData);
+                onStatusUpdateAction(statusData);
             } catch (error) {
                 console.error('Failed to parse status data:', error);
-                onError('Failed to parse status update');
+                onErrorAction('Failed to parse status update');
             }
         });
 
         eventSource.addEventListener('error', (event: MessageEvent) => {
             try {
-                console.log('got error')
                 const errorData = JSON.parse(event.data);
-                onError(errorData.error || 'Unknown error occurred');
+                onErrorAction(errorData.error || 'Unknown error occurred');
             } catch (error) {
-                onError('Failed to process error message');
+                onErrorAction('Failed to process error message');
             }
         });
 
         eventSource.addEventListener('complete', (event) => {
-            console.log('got complete')
             eventSource.close();
         });
 
         eventSource.onerror = (event) => {
             console.error('SSE connection error:', event);
-            onError('Connection to server lost');
+            onErrorAction('Connection to server lost');
             eventSource.close();
         };
 
@@ -74,7 +70,7 @@ export function TranscribeProgress({ jobId, trackingProgress, onStatusUpdate, on
             console.log('setEffect cleanup of eventSource')
             eventSource.close();
         };
-    }, [jobId, trackingProgress, onStatusUpdate, onError]);
+    }, [jobId, trackingProgress, onStatusUpdateAction, onErrorAction]);
 
     const getStatusColor = (status: string) => {
         switch (status) {

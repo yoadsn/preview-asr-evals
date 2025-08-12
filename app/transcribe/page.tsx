@@ -12,11 +12,16 @@ interface TranscriptionJob {
     audioUrl: string;
 }
 
+interface TranscriptionStreamResult {
+    output: any;
+}
+
 interface TranscriptionResult {
     delayTime?: number;
     executionTime?: number;
     id: string;
     output?: any;
+    stream?: TranscriptionStreamResult[];
     status: string;
     error?: any;
 }
@@ -25,6 +30,7 @@ export default function TranscribePage() {
     const [file, setFile] = useState<File | null>(null);
     const [job, setJob] = useState<TranscriptionJob | null>(null);
     const [result, setResult] = useState<TranscriptionResult | null>(null);
+    const [segments, setSegments] = useState<Array<any>>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -38,6 +44,7 @@ export default function TranscribePage() {
     const handleTranscribe = async () => {
         if (!file) return;
 
+        setSegments([]);
         setIsSubmitting(true);
         setError(null);
 
@@ -67,10 +74,12 @@ export default function TranscribePage() {
 
     const handleStatusUpdate = useCallback((statusData: TranscriptionResult) => {
         setResult(statusData);
+        setSegments(currSegments => [...currSegments, ...statusData.stream!.map(result => result.output)]);
     }, []);
 
     const handleError = useCallback((errorMessage: string) => {
         setError(errorMessage);
+        setSegments([]);
     }, []);
 
     const handleReset = () => {
@@ -79,10 +88,6 @@ export default function TranscribePage() {
         setResult(null);
         setError(null);
     };
-
-    if (result) {
-        console.log({ result })
-    }
 
     const trackingProgress = result?.status !== 'COMPLETED' && result?.status !== 'FAILED';
 
@@ -168,19 +173,19 @@ export default function TranscribePage() {
                                 <TranscribeProgress
                                     jobId={job.jobId}
                                     trackingProgress={trackingProgress}
-                                    onStatusUpdate={handleStatusUpdate}
-                                    onError={handleError}
+                                    onStatusUpdateAction={handleStatusUpdate}
+                                    onErrorAction={handleError}
                                 />
                             </div>
                         )}
 
                         {/* Results Section */}
-                        {result && result.status === 'COMPLETED' && result.output && (
+                        {result && ['COMPLETED', 'IN_PROGRESS'].includes(result.status) && segments && (
                             <div className="bg-white shadow rounded-lg p-6">
                                 <h2 className="text-xl font-semibold text-gray-900 mb-4">
                                     Transcription Results
                                 </h2>
-                                <TranscribeResults result={result} />
+                                <TranscribeResults result={result} segments={segments} />
                             </div>
                         )}
 

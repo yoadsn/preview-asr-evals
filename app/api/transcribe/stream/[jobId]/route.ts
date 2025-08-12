@@ -48,7 +48,7 @@ export async function GET(
 
                 const pollStatus = async () => {
                     try {
-                        const runpodResponse = await fetch(`https://api.runpod.ai/v2/${runpodEndpointId}/status/${jobId}`, {
+                        const runpodResponse = await fetch(`https://api.runpod.ai/v2/${runpodEndpointId}/stream/${jobId}`, {
                             method: 'GET',
                             headers: {
                                 'Authorization': `Bearer ${runpodApiKey}`,
