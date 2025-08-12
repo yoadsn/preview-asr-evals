@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { TranscribeUploader } from '@/components/transcribe-uploader';
+import { TranscribeUploaderDirect } from '@/components/transcribe-uploader-direct';
 import { TranscribeProgress } from '@/components/transcribe-progress';
 import { TranscribeResults } from '@/components/transcribe-results';
 import Header from '@/components/header';
@@ -27,34 +27,37 @@ interface TranscriptionResult {
 }
 
 export default function TranscribePage() {
-    const [file, setFile] = useState<File | null>(null);
+    const [audioUrl, setAudioUrl] = useState<string | null>(null);
     const [job, setJob] = useState<TranscriptionJob | null>(null);
     const [result, setResult] = useState<TranscriptionResult | null>(null);
     const [segments, setSegments] = useState<Array<any>>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const handleFileSelect = (selectedFile: File) => {
-        setFile(selectedFile);
+    const handleUploadComplete = (url: string) => {
+        setAudioUrl(url);
         setJob(null);
         setResult(null);
         setError(null);
     };
 
+    const handleUploadError = (errorMessage: string) => {
+        setError(errorMessage);
+        setAudioUrl(null);
+    };
+
     const handleTranscribe = async () => {
-        if (!file) return;
+        if (!audioUrl) return;
 
         setSegments([]);
         setIsSubmitting(true);
         setError(null);
 
         try {
-            const formData = new FormData();
-            formData.append('file', file);
-
-            const response = await fetch('/api/transcribe/submit', {
+            const response = await fetch('/api/transcribe/submit-job', {
                 method: 'POST',
-                body: formData,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ audioUrl }),
             });
 
             if (!response.ok) {
@@ -83,7 +86,7 @@ export default function TranscribePage() {
     }, []);
 
     const handleReset = () => {
-        setFile(null);
+        setAudioUrl(null);
         setJob(null);
         setResult(null);
         setError(null);
@@ -123,15 +126,19 @@ export default function TranscribePage() {
                                 <h2 className="text-xl font-semibold text-gray-900 mb-4">
                                     Upload Audio File
                                 </h2>
-                                <TranscribeUploader onFileSelect={handleFileSelect} />
+                                <TranscribeUploaderDirect 
+                                    onUploadComplete={handleUploadComplete}
+                                    onUploadError={handleUploadError}
+                                    disabled={isSubmitting}
+                                />
 
-                                {file && (
+                                {audioUrl && (
                                     <div className="mt-4 p-4 bg-gray-50 rounded-md">
                                         <p className="text-sm text-gray-600">
-                                            Selected file: <span className="font-medium">{file.name}</span>
+                                            ✅ <span className="font-medium">File uploaded successfully</span>
                                         </p>
-                                        <p className="text-xs text-gray-500">
-                                            Size: {(file.size / 1024 / 1024).toFixed(2)} MB
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Ready for transcription
                                         </p>
 
                                         <button
@@ -145,10 +152,10 @@ export default function TranscribePage() {
                                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                                     </svg>
-                                                    Submitting...
+                                                    Starting transcription...
                                                 </>
                                             ) : (
-                                                'Transcribe'
+                                                'Start Transcription'
                                             )}
                                         </button>
                                     </div>
