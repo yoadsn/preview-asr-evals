@@ -1,15 +1,7 @@
-'use server';
-import { withAuth, signOut } from '@workos-inc/authkit-nextjs';
 import Link from 'next/link';
+import UserMenu from './userMenu';
 
-export default async function Header() {
-    const { user } = await withAuth({ ensureSignedIn: true });
-
-    async function signOutAction() {
-        'use server';
-        await signOut();
-    }
-
+export default function Header() {
     return (
         <header className="bg-white shadow-sm">
             <nav className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -36,15 +28,8 @@ export default async function Header() {
                             Transcribe Audio
                         </Link>
                     </div>
-                    <div className="flex space-x-4 text-sm font-medium text-gray-700 text-center py-2">
-                        <form
-                            action={signOutAction}
-                        >
-                            <p>Welcome back {user?.firstName && `, ${user?.firstName}`}</p>
-                            <button className="underline" type="submit">Sign out</button>
-                        </form>
-                    </div>
                 </div>
+                <UserMenu />
             </nav>
         </header>
     );
