@@ -1,4 +1,5 @@
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client'
+import { cleanupOrphanedTranscriptionFiles } from '@/lib/blob'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -9,6 +10,13 @@ export async function POST(request: Request): Promise<NextResponse> {
       body,
       request,
       onBeforeGenerateToken: async (pathname, clientPayload) => {
+        // Trigger async cleanup of orphaned transcription files when user requests upload token
+        if (pathname.startsWith('transcribe/')) {
+          cleanupOrphanedTranscriptionFiles().catch(error => {
+            console.warn('Background cleanup failed during token generation:', error);
+          });
+        }
+
         // Validate file type based on pathname extension
         const allowedExtensions = [
           '.mp3',
