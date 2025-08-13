@@ -10,10 +10,26 @@ export async function POST(request: Request): Promise<NextResponse> {
       request,
       onBeforeGenerateToken: async (pathname, clientPayload) => {
         // Validate file type based on pathname extension
-        const allowedExtensions = ['.mp3', '.wav', '.aac', '.ogg', '.webm', '.flac', '.m4a', '.mp4'];
+        const allowedExtensions = [
+          '.mp3',
+          '.wav',
+          '.aac',
+          '.3gp',
+          '.3g2',
+          '.ogg',
+          '.oga',
+          '.wmv',
+          '.webm',
+          '.weba',
+          '.flac',
+          '.m4a',
+          '.mp4',
+          '.opus'
+        ];
         const hasValidExtension = allowedExtensions.some(ext => pathname.toLowerCase().endsWith(ext));
-        
+
         if (!hasValidExtension) {
+          console.log('Invalid file type. Please upload an audio file.');
           throw new Error('Invalid file type. Please upload an audio file.');
         }
 
@@ -23,7 +39,7 @@ export async function POST(request: Request): Promise<NextResponse> {
             'audio/mp3',
             'audio/wav',
             'audio/x-wav',
-            'audio/x-pn-wav', 
+            'audio/x-pn-wav',
             'audio/wave',
             'audio/aac',
             'audio/x-aac',
