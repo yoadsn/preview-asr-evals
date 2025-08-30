@@ -11,24 +11,35 @@ export default async function middleware(request: NextRequest) {
     });
 
 
-    if (request.url.includes('/api') && !session.user) {
-        // Could be an API call from a script using access token to authenticate.
-        const auth_header = request.headers.get("Authorization");
-        if (auth_header) {
-            // Verify the access token
-            const token = auth_header.split(" ")[1];
-            try {
+    if (!session.user && !request.url.includes('/auth')) {
+        var authByHeaderOk = false;
+        if (request.url.includes('/api')) {
+            // Could be an API call from a script using access token to authenticate.
+            const auth_header = request.headers.get("Authorization");
+            if (auth_header) {
+                // Verify the access token
+                const token = auth_header.split(" ")[1];
+                try {
 
-                await jose.jwtVerify(token, JWKS, {
-                    issuer: `https://api.workos.com/user_management/${client_id}`,
-                });
-            } catch (e) {
-                // Invalid token
-                return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+                    await jose.jwtVerify(token, JWKS, {
+                        issuer: `https://api.workos.com/user_management/${client_id}`,
+                    });
+                } catch (e) {
+                    // Invalid token
+                    return NextResponse.json({ error: 'Invalid token' }, { status: 401 });
+                }
+
+                authByHeaderOk = true;
+            }
+
+            if (!authByHeaderOk) {
+                // No access token in the header, API should not redirect
+                return NextResponse.json({ error: 'Unauthenticated' }, { status: 401 });
             }
         } else {
-            if (authorizationUrl)
+            if (authorizationUrl) {
                 return NextResponse.redirect(authorizationUrl);
+            }
         }
 
     }
@@ -39,16 +50,3 @@ export default async function middleware(request: NextRequest) {
     });
 }
 
-// import { authkitMiddleware } from '@workos-inc/authkit-nextjs';
-
-// export default authkitMiddleware({
-//     middlewareAuth: {
-//         enabled: true,
-//         unauthenticatedPaths: ['/api/projects'],
-//     },
-//     debug: true
-// });
-
-// Match against pages that require authentication
-// Leave this out if you want authentication on every page in your application
-export const config = { matcher: ['/:path*'] };
