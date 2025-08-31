@@ -1,37 +1,83 @@
 'use client';
 
 import Header from "@/components/header";
-import { useEffect, useState, use } from 'react';
+import SyncedTranscriptViewer from "@/components/synced-transcript-viewer";
+import { useEffect, useState, useRef, useCallback, use } from 'react';
+import { TranscriptSegment, TransientWordInfo } from "@/lib/transcript-utils";
 
 export default function SampleViewer({ params }: { params: Promise<{ datasetId: string; sampleId: string }> }) {
-    const [transcript, setTranscript] = useState<string>('Loading transcript...');
+    const [transcript, setTranscript] = useState<{ segments: TranscriptSegment[] } | null>(null);
     const [transcriptError, setTranscriptError] = useState<string | null>(null);
     const [audioUrl, setAudioUrl] = useState<string>('');
+    const [currentTime, setCurrentTime] = useState<number>(0);
+    const [isPlaying, setIsPlaying] = useState<boolean>(false);
+    const audioRef = useRef<HTMLAudioElement>(null);
 
     const { datasetId, sampleId } = use(params);
 
     useEffect(() => {
-        // Load transcript
+        // Load transcript as JSON
         fetch(`/api/datasets/${datasetId}/samples/${sampleId}/transcript`)
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
+                return res.json();
+            })
             .then(data => {
                 if (data.error) {
                     setTranscriptError(data.error);
-                    setTranscript('Failed to load transcript');
+                } else if (data.segments) {
+                    setTranscript(data);
                 } else {
-                    // Format the JSON response nicely
-                    setTranscript(JSON.stringify(data, null, 2));
+                    setTranscriptError('Invalid transcript format');
                 }
             })
             .catch(err => {
                 setTranscriptError('Failed to load transcript');
-                setTranscript('Error: Failed to load transcript');
                 console.error('Error loading transcript:', err);
             });
 
         // Set audio URL
         setAudioUrl(`/api/datasets/${datasetId}/samples/${sampleId}/audio`);
     }, [datasetId, sampleId]);
+
+    const handleTimeUpdate = useCallback(() => {
+        if (audioRef.current) {
+            setCurrentTime(audioRef.current.currentTime);
+        }
+    }, []);
+
+    const handlePlayPause = useCallback(() => {
+        if (!audioRef.current) return;
+
+        if (isPlaying) {
+            audioRef.current.pause();
+        } else {
+            audioRef.current.play();
+        }
+    }, [isPlaying]);
+
+    const handleSeek = useCallback((time: number) => {
+        if (audioRef.current) {
+            audioRef.current.currentTime = time;
+            setCurrentTime(time);
+        }
+    }, []);
+
+    const handleAudioPlay = useCallback(() => {
+        setIsPlaying(true);
+    }, []);
+
+    const handleAudioPause = useCallback(() => {
+        setIsPlaying(false);
+    }, []);
+
+    const handleWordClick = useCallback((wordInfo: TransientWordInfo) => {
+        if (wordInfo.word) {
+            handleSeek(wordInfo.word.start);
+        }
+    }, [handleSeek]);
 
     const goBack = () => {
         window.history.back();
@@ -66,9 +112,13 @@ export default function SampleViewer({ params }: { params: Promise<{ datasetId: 
                             </h2>
 
                             {audioUrl && <audio
+                                ref={audioRef}
                                 controls
                                 className="w-full"
                                 preload="none"
+                                onTimeUpdate={handleTimeUpdate}
+                                onPlay={handleAudioPlay}
+                                onPause={handleAudioPause}
                                 style={{ maxWidth: '100%' }}
                             >
                                 <source src={audioUrl} />
@@ -84,6 +134,11 @@ export default function SampleViewer({ params }: { params: Promise<{ datasetId: 
                         <div className="bg-white p-6 rounded-lg shadow-md">
                             <h2 className="text-xl font-semibold text-gray-900 mb-4">
                                 Transcript
+                                {transcript && (
+                                    <span className="text-sm text-gray-500 ml-2">
+                                        · {transcript.segments.length} segments
+                                    </span>
+                                )}
                             </h2>
 
                             {transcriptError && (
@@ -94,13 +149,27 @@ export default function SampleViewer({ params }: { params: Promise<{ datasetId: 
                                 </div>
                             )}
 
-                            <textarea
-                                value={transcript}
-                                readOnly
-                                className="w-full h-96 p-4 border border-gray-300 rounded-lg bg-gray-50 font-mono text-sm resize-none"
-                                style={{ minHeight: '384px' }}
-                                placeholder="Transcript will be loaded here..."
-                            />
+                            {!transcript && !transcriptError && (
+                                <div className="flex items-center justify-center h-96 text-gray-500">
+                                    <div className="text-center">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                                        Loading transcript...
+                                    </div>
+                                </div>
+                            )}
+
+                            {transcript && (
+                                <SyncedTranscriptViewer
+                                    transcript={transcript}
+                                    audioRef={audioRef}
+                                    onWordClick={handleWordClick}
+                                    className="max-h-96 overflow-y-auto"
+                                />
+                            )}
+
+                            <div className="mt-4 text-xs text-gray-500 border-t pt-4">
+                                💡 Tip: Click any word to jump to that timestamp, or right-click to seek instantly
+                            </div>
                         </div>
                     </div>
                 </div>
