@@ -297,6 +297,9 @@ class SRNormalizedProvider implements ASRDataProvider {
     // Global cache for manifest data: bucket -> Record<sampleId, manifestData>
     private static manifestCache = new Map<string, Record<string, any>>();
 
+    // Global cache for folder listings: datasetSource -> ASRSample[]
+    private static folderListingCache = new Map<string, ASRSample[]>();
+
     async initialize(): Promise<void> {
         const accessKeyId = process.env.AWS_S3_ACCESS_KEY_ID;
         const secretAccessKey = process.env.AWS_S3_ACCESS_KEY_SECRET;
@@ -399,6 +402,12 @@ class SRNormalizedProvider implements ASRDataProvider {
     }
 
     async listSamples(datasetSource: string): Promise<ASRSample[]> {
+        // Check cache first
+        if (SRNormalizedProvider.folderListingCache.has(datasetSource)) {
+            console.info(`Using cached folder listing for dataset: ${datasetSource}`);
+            return SRNormalizedProvider.folderListingCache.get(datasetSource)!;
+        }
+
         if (!this.s3Client) {
             throw new Error('Provider not initialized. Call initialize() first.');
         }
@@ -453,6 +462,9 @@ class SRNormalizedProvider implements ASRDataProvider {
             }
 
             console.info(`Found ${samples.length} sample directories in S3 bucket ${bucket}`);
+            // Cache the results
+            SRNormalizedProvider.folderListingCache.set(datasetSource, samples);
+            console.info(`Cached folder listing for dataset: ${datasetSource}`);
             return samples;
         } catch (error) {
             console.error('Failed to list samples from S3:', error);
