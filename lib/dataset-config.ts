@@ -15,6 +15,12 @@ export const HARDCODED_DATASETS: Dataset[] = [
         name: "Ivrit.ai Recital",
         type: "hf-normalized",
         source: "ivrit-ai/crowd-recital"
+    },
+    {
+        id: "yi_whatsapp_prompts",
+        name: "YI Whatsapp Prompts",
+        type: "s3-normalized",
+        source: "s3://serve-datasets/yi-whatsapp-prompts/"
     }
 ];
 

@@ -20,32 +20,42 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         // Get the provider for this dataset type
         const provider = await DataProviderFactory.getProvider(dataset.type);
 
-        // Get the audio file info - this will handle downloading and caching for HF provider
-        const { cachedPath, filename } = await provider.getSampleAudioFile(dataset.source, sampleId);
+        // Get the audio file info - this will handle downloading, caching, or URL generation
+        const fileInfo = await provider.getSampleAudioFile(dataset.source, sampleId);
 
-        // Read file as buffer for proper audio player compatibility
-        const fileBuffer = await fs.readFile(cachedPath);
-        const fileSize = fileBuffer.length;
+        // Handle different file access modes
+        if (fileInfo.downloadUrl) {
+            // Redirect to the URL (e.g., S3 signed URL)
+            return NextResponse.redirect(fileInfo.downloadUrl);
+        } else if (fileInfo.streamUrl) {
+            // Stream the file content
+            const { streamUrl, filename } = fileInfo;
+            const fileBuffer = await fs.readFile(streamUrl);
+            const fileSize = fileBuffer.length;
 
-        // Determine content type based on file extension
-        const extension = path.extname(filename).toLowerCase();
-        const contentType = getContentType(extension);
+            // Determine content type based on file extension
+            const extension = path.extname(filename).toLowerCase();
+            const contentType = getContentType(extension);
 
-        // Return buffer as Response for HTML audio element compatibility
-        return new Response(fileBuffer, {
-            headers: {
-                'Content-Type': contentType,
-                'Content-Length': fileSize.toString(),
-                'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
-                'Accept-Ranges': 'bytes',
-                // Browser filename hint
-                'Content-Disposition': `inline; filename="${filename}"`,
-                // Additional headers for audio player compatibility
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type',
-            }
-        });
+            // Return buffer as Response for HTML audio element compatibility
+            return new Response(fileBuffer, {
+                headers: {
+                    'Content-Type': contentType,
+                    'Content-Length': fileSize.toString(),
+                    'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+                    'Accept-Ranges': 'bytes',
+                    // Browser filename hint
+                    'Content-Disposition': `inline; filename="${filename}"`,
+                    // Additional headers for audio player compatibility
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+                    'Access-Control-Allow-Headers': 'Content-Type',
+                }
+            });
+        } else {
+            // Neither downloadUrl nor streamUrl provided
+            throw new Error('No valid file access method provided by provider');
+        }
     } catch (error) {
         console.error('Error getting sample audio file:', error);
 

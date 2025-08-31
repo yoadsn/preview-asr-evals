@@ -2,6 +2,8 @@ import { listFiles, downloadFile } from '@huggingface/hub';
 import { promises as fs } from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { S3Client, ListObjectsV2Command, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 // Data providers for ASR datasets
 // This file defines how to interact with different data sources
@@ -13,8 +15,8 @@ export interface ASRDataProvider {
     listSamples(datasetSource: string): Promise<ASRSample[]>;
     getSampleAudioUrl(datasetSource: string, sampleId: string): Promise<string>;
     getSampleTranscriptionUrl(datasetSource: string, sampleId: string): Promise<string>;
-    getSampleAudioFile(datasetSource: string, sampleId: string): Promise<{ cachedPath: string, filename: string }>;
-    getSampleTranscriptionFile(datasetSource: string, sampleId: string): Promise<string>;
+    getSampleAudioFile(datasetSource: string, sampleId: string): Promise<{ downloadUrl?: string, streamUrl?: string, filename: string }>;
+    getSampleTranscriptionFile(datasetSource: string, sampleId: string): Promise<{ downloadUrl?: string, streamUrl?: string, filename: string }>;
 }
 
 export interface ASRSample {
@@ -141,7 +143,7 @@ class HFNormalizedProvider implements ASRDataProvider {
         return 4; // other audio files
     }
 
-    async getSampleAudioFile(datasetSource: string, sampleId: string): Promise<{ cachedPath: string, filename: string }> {
+    async getSampleAudioFile(datasetSource: string, sampleId: string): Promise<{ downloadUrl?: string, streamUrl?: string, filename: string }> {
         if (!sampleId || typeof sampleId !== 'string') {
             throw new Error('Invalid sampleId: must be a non-empty string');
         }
@@ -193,7 +195,7 @@ class HFNormalizedProvider implements ASRDataProvider {
             try {
                 await fs.access(cachedFilePath);
                 console.info(`Serving cached audio file: ${cachedFilePath}`);
-                return { cachedPath: cachedFilePath, filename: bestAudioFile.filename };
+                return { streamUrl: cachedFilePath, filename: bestAudioFile.filename };
             } catch {
                 // File not cached, download it
             }
@@ -215,7 +217,7 @@ class HFNormalizedProvider implements ASRDataProvider {
             await fs.writeFile(cachedFilePath, new Uint8Array(arrayBuffer));
 
             console.info(`Audio file cached successfully: ${cachedFilePath}`);
-            return { cachedPath: cachedFilePath, filename: bestAudioFile.filename };
+            return { streamUrl: cachedFilePath, filename: bestAudioFile.filename };
 
         } catch (error) {
             console.error('Failed to get sample audio file:', error);
@@ -223,7 +225,7 @@ class HFNormalizedProvider implements ASRDataProvider {
         }
     }
 
-    async getSampleTranscriptionFile(datasetSource: string, sampleId: string): Promise<string> {
+    async getSampleTranscriptionFile(datasetSource: string, sampleId: string): Promise<{ downloadUrl?: string, streamUrl?: string, filename: string }> {
         if (!sampleId || typeof sampleId !== 'string') {
             throw new Error('Invalid sampleId: must be a non-empty string');
         }
@@ -241,7 +243,7 @@ class HFNormalizedProvider implements ASRDataProvider {
             try {
                 await fs.access(cachedFilePath);
                 console.info(`Serving cached transcript file: ${cachedFilePath}`);
-                return cachedFilePath;
+                return { streamUrl: cachedFilePath, filename: 'transcript.aligned.json' };
             } catch {
                 // File not cached, download it
             }
@@ -263,7 +265,7 @@ class HFNormalizedProvider implements ASRDataProvider {
             await fs.writeFile(cachedFilePath, new Uint8Array(arrayBuffer));
 
             console.info(`Transcript file cached successfully: ${cachedFilePath}`);
-            return cachedFilePath;
+            return { streamUrl: cachedFilePath, filename: 'transcript.aligned.json' };
 
         } catch (error) {
             if (error instanceof Error && error.message.includes('404')) {
@@ -272,6 +274,166 @@ class HFNormalizedProvider implements ASRDataProvider {
             console.error('Failed to get sample transcript file:', error);
             throw error;
         }
+    }
+}
+
+// S3 Normalized Provider
+class SRNormalizedProvider implements ASRDataProvider {
+    name = "s3-normalized";
+    description = "Normalized provider for S3-based ASR datasets";
+
+    private s3Client?: S3Client;
+
+    async initialize(): Promise<void> {
+        const accessKeyId = process.env.AWS_S3_ACCESS_KEY_ID;
+        const secretAccessKey = process.env.AWS_S3_ACCESS_KEY_SECRET;
+
+        if (!accessKeyId || !secretAccessKey) {
+            throw new Error("AWS_S3_ACCESS_KEY_ID and AWS_S3_ACCESS_KEY_SECRET environment variables are required for s3-normalized provider");
+        }
+
+        this.s3Client = new S3Client({
+            credentials: {
+                accessKeyId,
+                secretAccessKey,
+            },
+        });
+    }
+
+    private parseS3Source(source: string): { bucket: string; prefix: string } {
+        // Expected format: s3://bucket-name/path/to/dataset/
+        if (!source.startsWith('s3://')) {
+            throw new Error('S3 source must start with s3://');
+        }
+
+        const withoutS3 = source.substring(5); // Remove 's3://'
+        const firstSlash = withoutS3.indexOf('/');
+
+        if (firstSlash === -1) {
+            throw new Error('S3 source must contain a bucket and path');
+        }
+
+        const bucket = withoutS3.substring(0, firstSlash);
+        const prefix = withoutS3.substring(firstSlash + 1);
+
+        return { bucket, prefix: prefix.endsWith('/') ? prefix : prefix + '/' };
+    }
+
+    async listSamples(datasetSource: string): Promise<ASRSample[]> {
+        if (!this.s3Client) {
+            throw new Error('Provider not initialized. Call initialize() first.');
+        }
+
+        const { bucket, prefix } = this.parseS3Source(datasetSource);
+
+        try {
+            const command = new ListObjectsV2Command({
+                Bucket: bucket,
+                Prefix: prefix,
+                Delimiter: '/', // List only top-level directories
+            });
+
+            const response = await this.s3Client.send(command);
+            const samples: ASRSample[] = [];
+
+            if (response.CommonPrefixes) {
+                for (const commonPrefix of response.CommonPrefixes) {
+                    if (commonPrefix.Prefix) {
+                        // Extract sample directory name from prefix relative to dataset prefix
+                        const relativePath = commonPrefix.Prefix.substring(prefix.length);
+                        if (relativePath && !relativePath.startsWith('/')) {
+                            // This is a sample directory (not empty string)
+                            const sampleId = relativePath.replace(/\/$/, ''); // Remove trailing slash
+                            samples.push({
+                                id: sampleId,
+                                name: sampleId,
+                                metadata: {
+                                    path: commonPrefix.Prefix,
+                                    bucket,
+                                    fullPath: commonPrefix.Prefix,
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+
+            console.info(`Found ${samples.length} sample directories in S3 bucket ${bucket}`);
+            return samples;
+        } catch (error) {
+            console.error('Failed to list samples from S3:', error);
+            throw new Error(`Failed to fetch samples from S3: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    async getSampleAudioUrl(datasetSource: string, sampleId: string): Promise<string> {
+        if (!this.s3Client) {
+            throw new Error('Provider not initialized. Call initialize() first.');
+        }
+
+        const { bucket, prefix } = this.parseS3Source(datasetSource);
+        const audioKey = `${prefix}${sampleId}/audio.light.opus`;
+
+        try {
+            const command = new GetObjectCommand({
+                Bucket: bucket,
+                Key: audioKey,
+            });
+
+            // Generate signed URL that expires in 1 hour
+            const signedUrl = await getSignedUrl(this.s3Client, command, { expiresIn: 3600 });
+            console.info(`Generated signed URL for audio file: ${audioKey}`);
+            return signedUrl;
+        } catch (error) {
+            console.error('Failed to generate signed URL for audio file:', error);
+            throw new Error(`Failed to generate signed URL for audio file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    async getSampleTranscriptionUrl(datasetSource: string, sampleId: string): Promise<string> {
+        if (!this.s3Client) {
+            throw new Error('Provider not initialized. Call initialize() first.');
+        }
+
+        const { bucket, prefix } = this.parseS3Source(datasetSource);
+        const transcriptKey = `${prefix}${sampleId}/transcript.aligned.json`;
+
+        try {
+            const command = new GetObjectCommand({
+                Bucket: bucket,
+                Key: transcriptKey,
+            });
+
+            // Generate signed URL that expires in 1 hour
+            const signedUrl = await getSignedUrl(this.s3Client, command, { expiresIn: 3600 });
+            console.info(`Generated signed URL for transcript file: ${transcriptKey}`);
+            return signedUrl;
+        } catch (error) {
+            console.error('Failed to generate signed URL for transcript file:', error);
+            throw new Error(`Failed to generate signed URL for transcript file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    async getSampleAudioFile(datasetSource: string, sampleId: string): Promise<{ downloadUrl?: string, streamUrl?: string, filename: string }> {
+        // For S3 provider, we serve directly via signed URLs (both downloadUrl and streamUrl can be the same)
+        const signedUrl = await this.getSampleAudioUrl(datasetSource, sampleId);
+
+        return {
+            downloadUrl: signedUrl, // Client can be redirected to this URL
+            streamUrl: signedUrl,   // Content can be streamed to browser from this URL
+            filename: "audio.light.opus"
+        };
+    }
+
+    async getSampleTranscriptionFile(datasetSource: string, sampleId: string): Promise<{ downloadUrl?: string, streamUrl?: string, filename: string }> {
+        // For S3 provider, we serve directly via signed URLs (both downloadUrl and streamUrl can be the same)
+        const signedUrl = await this.getSampleTranscriptionUrl(datasetSource, sampleId);
+
+        return {
+            downloadUrl: signedUrl, // Client can be redirected to this URL
+            streamUrl: signedUrl,   // Content can be streamed to browser from this URL
+            filename: "transcript.aligned.json"
+        };
     }
 }
 
@@ -285,10 +447,14 @@ class DataProviderFactory {
                 const provider = new HFNormalizedProvider();
                 await provider.initialize();
                 return provider;
+            case 's3-normalized':
+                const s3Provider = new SRNormalizedProvider();
+                await s3Provider.initialize();
+                return s3Provider;
             default:
                 throw new Error(`Unknown provider type: ${providerType}`);
         }
     }
 }
 
-export { DataProviderFactory, HFNormalizedProvider };
+export { DataProviderFactory, HFNormalizedProvider, SRNormalizedProvider };
