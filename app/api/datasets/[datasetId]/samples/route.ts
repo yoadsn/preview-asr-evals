@@ -17,7 +17,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ data
         }
 
         // Get the provider for this dataset type
-        const provider = await DataProviderFactory.getProvider(dataset.type);
+        const provider = await DataProviderFactory.getProvider(dataset);
 
         // List samples using the provider
         const samples = await provider.listSamples(dataset.source);

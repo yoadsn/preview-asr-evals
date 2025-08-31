@@ -17,7 +17,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         }
 
         // Get the provider for this dataset type
-        const provider = await DataProviderFactory.getProvider(dataset.type);
+        const provider = await DataProviderFactory.getProvider(dataset);
 
         // Get the transcript file info - this will handle cached files or URL generation
         const fileInfo = await provider.getSampleTranscriptionFile(dataset.source, sampleId);

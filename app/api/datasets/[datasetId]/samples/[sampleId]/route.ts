@@ -16,7 +16,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ data
         }
 
         // Get the provider for this dataset type
-        const provider = await DataProviderFactory.getProvider(dataset.type);
+        const provider = await DataProviderFactory.getProvider(dataset);
 
         // Get URLs for audio and transcription data
         const [audioUrl, transcriptionUrl] = await Promise.all([

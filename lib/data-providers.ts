@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import { S3Client, ListObjectsV2Command, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import Papa from 'papaparse';
+import { Dataset } from './dataset-config';
 
 // Data providers for ASR datasets
 // This file defines how to interact with different data sources
@@ -12,7 +13,7 @@ import Papa from 'papaparse';
 export interface ASRDataProvider {
     name: string;
     description: string;
-    initialize(): Promise<void>;
+    initialize(dataset: Dataset): Promise<void>;
     listSamples(datasetSource: string): Promise<ASRSample[]>;
     getSampleAudioUrl(datasetSource: string, sampleId: string): Promise<string>;
     getSampleTranscriptionUrl(datasetSource: string, sampleId: string): Promise<string>;
@@ -49,7 +50,7 @@ class HFNormalizedProvider implements ASRDataProvider {
 
     private accessToken?: string;
 
-    async initialize(): Promise<void> {
+    async initialize(dataset: Dataset): Promise<void> {
         this.accessToken = process.env.HF_ACCESS_TOKEN;
         if (!this.accessToken) {
             throw new Error("HF_ACCESS_TOKEN environment variable is required for hf-normalized provider");
@@ -300,7 +301,7 @@ class SRNormalizedProvider implements ASRDataProvider {
     // Global cache for folder listings: datasetSource -> ASRSample[]
     private static folderListingCache = new Map<string, ASRSample[]>();
 
-    async initialize(): Promise<void> {
+    async initialize(dataset: Dataset): Promise<void> {
         const accessKeyId = process.env.AWS_S3_ACCESS_KEY_ID;
         const secretAccessKey = process.env.AWS_S3_ACCESS_KEY_SECRET;
 
@@ -309,6 +310,7 @@ class SRNormalizedProvider implements ASRDataProvider {
         }
 
         this.s3Client = new S3Client({
+            region: dataset.awsRegion,
             credentials: {
                 accessKeyId,
                 secretAccessKey,
@@ -547,18 +549,18 @@ class SRNormalizedProvider implements ASRDataProvider {
 class DataProviderFactory {
     private static providers = new Map<string, ASRDataset>();
 
-    static async getProvider(providerType: string): Promise<ASRDataProvider> {
-        switch (providerType) {
+    static async getProvider(dataset: Dataset): Promise<ASRDataProvider> {
+        switch (dataset.type) {
             case 'hf-normalized':
                 const provider = new HFNormalizedProvider();
-                await provider.initialize();
+                await provider.initialize(dataset);
                 return provider;
             case 's3-normalized':
                 const s3Provider = new SRNormalizedProvider();
-                await s3Provider.initialize();
+                await s3Provider.initialize(dataset);
                 return s3Provider;
             default:
-                throw new Error(`Unknown provider type: ${providerType}`);
+                throw new Error(`Unknown provider type: ${dataset.type}`);
         }
     }
 }

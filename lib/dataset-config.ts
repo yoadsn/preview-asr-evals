@@ -6,6 +6,7 @@ export interface Dataset {
     name: string;
     type: string;
     source: string;
+    awsRegion?: string;
 }
 
 // Hardcoded datasets for now - will be moved to database later
@@ -20,7 +21,8 @@ export const HARDCODED_DATASETS: Dataset[] = [
         id: "yi_whatsapp_prompts",
         name: "YI Whatsapp Prompts",
         type: "s3-normalized",
-        source: "s3://serve-datasets/yi-whatsapp-prompts/"
+        source: "s3://serve-datasets/yi-whatsapp-prompts/",
+        awsRegion: "eu-north-1"
     }
 ];
 
