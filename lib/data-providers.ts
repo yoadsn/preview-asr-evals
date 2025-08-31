@@ -60,6 +60,7 @@ class HFNormalizedProvider implements ASRDataProvider {
                 accessToken: this.accessToken
             });
 
+            let maxSamplesToLoad = 10;
             for await (const file of fileIterator) {
                 // Filter for directories only - these represent sample directories
                 if (file.type === 'directory') {
@@ -74,6 +75,10 @@ class HFNormalizedProvider implements ASRDataProvider {
                             size: file.size
                         }
                     });
+                    maxSamplesToLoad--;
+                    if (maxSamplesToLoad === 0) {
+                        break;
+                    }
                 }
             }
 

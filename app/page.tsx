@@ -14,7 +14,7 @@ export default function Home() {
                             Welcome to the YI Whisper training project system
                         </p>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
                             <a
                                 href="/projects"
                                 className="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200"
@@ -36,6 +36,18 @@ export default function Home() {
                                 </h2>
                                 <p className="text-gray-600">
                                     Use YI Whisper models to transcribe your audio files
+                                </p>
+                            </a>
+
+                            <a
+                                href="/dataset-preview"
+                                className="block p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200"
+                            >
+                                <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+                                    Dataset Preview
+                                </h2>
+                                <p className="text-gray-600">
+                                    Browse Hugging Face datasets with audio playback and transcripts
                                 </p>
                             </a>
                         </div>
