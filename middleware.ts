@@ -10,6 +10,12 @@ export default async function middleware(request: NextRequest) {
         debug: true,
     });
 
+    // Disable authentication if DEV_DISABLE_AUTH is set
+    if (process.env.DEV_DISABLE_AUTH) {
+        return NextResponse.next({
+            headers: headers,
+        });
+    }
 
     if (!session.user && !request.url.includes('/auth')) {
         var authByHeaderOk = false;
@@ -49,4 +55,3 @@ export default async function middleware(request: NextRequest) {
         headers: headers,
     });
 }
-
