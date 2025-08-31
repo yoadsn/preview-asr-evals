@@ -10,12 +10,12 @@ export interface Dataset {
 
 // Hardcoded datasets for now - will be moved to database later
 export const HARDCODED_DATASETS: Dataset[] = [
-    {
-        id: "ivrit_ai_recital",
-        name: "Ivrit.ai Recital",
-        type: "hf-normalized",
-        source: "ivrit-ai/crowd-recital"
-    },
+    // {
+    //     id: "ivrit_ai_recital",
+    //     name: "Ivrit.ai Recital",
+    //     type: "hf-normalized",
+    //     source: "ivrit-ai/crowd-recital"
+    // },
     {
         id: "yi_whatsapp_prompts",
         name: "YI Whatsapp Prompts",

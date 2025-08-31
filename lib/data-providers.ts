@@ -4,6 +4,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { S3Client, ListObjectsV2Command, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import Papa from 'papaparse';
 
 // Data providers for ASR datasets
 // This file defines how to interact with different data sources
@@ -22,7 +23,16 @@ export interface ASRDataProvider {
 export interface ASRSample {
     id: string;
     name: string;
-    metadata: Record<string, any>;
+    metadata: {
+        path: string;
+        bucket?: string;
+        fullPath?: string;
+        quality_score?: number | null;
+        avg_words_per_minute?: number | null;
+        word_count?: number | null;
+        duration?: number | null;
+        [key: string]: any; // Allow additional properties
+    };
 }
 
 export interface ASRDataset {
@@ -284,6 +294,9 @@ class SRNormalizedProvider implements ASRDataProvider {
 
     private s3Client?: S3Client;
 
+    // Global cache for manifest data: bucket -> Record<sampleId, manifestData>
+    private static manifestCache = new Map<string, Record<string, any>>();
+
     async initialize(): Promise<void> {
         const accessKeyId = process.env.AWS_S3_ACCESS_KEY_ID;
         const secretAccessKey = process.env.AWS_S3_ACCESS_KEY_SECRET;
@@ -319,6 +332,72 @@ class SRNormalizedProvider implements ASRDataProvider {
         return { bucket, prefix: prefix.endsWith('/') ? prefix : prefix + '/' };
     }
 
+    private async loadManifestData(bucket: string, datasetPrefix: string): Promise<Record<string, any>> {
+        // Use dataset-specific cache key
+        const cacheKey = `${bucket}:${datasetPrefix}`;
+        if (SRNormalizedProvider.manifestCache.has(cacheKey)) {
+            console.info(`Using cached manifest data for dataset: ${cacheKey}`);
+            return SRNormalizedProvider.manifestCache.get(cacheKey)!;
+        }
+
+        try {
+            console.info(`Loading manifest data from dataset: ${cacheKey}`);
+
+            // Load manifest.csv from dataset root (same level as sample directories)
+            const manifestKey = `${datasetPrefix}manifest.csv`;
+            const command = new GetObjectCommand({
+                Bucket: bucket,
+                Key: manifestKey,
+            });
+
+            if (!this.s3Client) {
+                throw new Error('S3 client not initialized');
+            }
+
+            const response = await this.s3Client.send(command);
+            const csvContent = await response.Body?.transformToString();
+
+            if (!csvContent) {
+                throw new Error(`Empty manifest file: ${manifestKey}`);
+            }
+
+            // Parse CSV using PapaParse
+            const parsedData = Papa.parse(csvContent, {
+                header: true,
+                skipEmptyLines: true,
+                transformHeader: (header: string) => header.trim(),
+            });
+
+            if (parsedData.errors && parsedData.errors.length > 0) {
+                console.warn('CSV parsing errors:', parsedData.errors);
+            }
+
+            // Index data by source_entry_id for quick lookups
+            const manifestMap: Record<string, any> = {};
+            for (const row of parsedData.data as any[]) {
+                if (row.source_entry_id) {
+                    manifestMap[row.source_entry_id] = {
+                        quality_score: parseFloat(row.quality_score) || null,
+                        avg_words_per_minute: parseFloat(row.avg_words_per_minute) || null,
+                        word_count: parseInt(row.word_count) || null,
+                        duration: parseFloat(row.duration) || null,
+                    };
+                }
+            }
+
+            // Cache the manifest data
+            SRNormalizedProvider.manifestCache.set(cacheKey, manifestMap);
+
+            console.info(`Loaded and cached manifest data for ${Object.keys(manifestMap).length} samples from dataset: ${cacheKey}`);
+            return manifestMap;
+        } catch (error) {
+            console.error(`Failed to load manifest data for dataset ${cacheKey}:`, error);
+            // If manifest loading fails, cache an empty object to avoid repeated attempts
+            SRNormalizedProvider.manifestCache.set(cacheKey, {});
+            return {};
+        }
+    }
+
     async listSamples(datasetSource: string): Promise<ASRSample[]> {
         if (!this.s3Client) {
             throw new Error('Provider not initialized. Call initialize() first.');
@@ -336,6 +415,9 @@ class SRNormalizedProvider implements ASRDataProvider {
             const response = await this.s3Client.send(command);
             const samples: ASRSample[] = [];
 
+            // Load manifest data first (with caching)
+            const manifestData = await this.loadManifestData(bucket, prefix);
+
             if (response.CommonPrefixes) {
                 for (const commonPrefix of response.CommonPrefixes) {
                     if (commonPrefix.Prefix) {
@@ -344,14 +426,26 @@ class SRNormalizedProvider implements ASRDataProvider {
                         if (relativePath && !relativePath.startsWith('/')) {
                             // This is a sample directory (not empty string)
                             const sampleId = relativePath.replace(/\/$/, ''); // Remove trailing slash
+
+                            // Get manifest data for this sample
+                            const sampleManifestData = manifestData[sampleId] || {};
+
+                            // Create enriched metadata
+                            const enrichedMetadata = {
+                                path: commonPrefix.Prefix,
+                                bucket,
+                                fullPath: commonPrefix.Prefix,
+                                // Enriched data from manifest
+                                quality_score: sampleManifestData.quality_score || null,
+                                avg_words_per_minute: sampleManifestData.avg_words_per_minute || null,
+                                word_count: sampleManifestData.word_count || null,
+                                duration: sampleManifestData.duration || null,
+                            };
+
                             samples.push({
                                 id: sampleId,
                                 name: sampleId,
-                                metadata: {
-                                    path: commonPrefix.Prefix,
-                                    bucket,
-                                    fullPath: commonPrefix.Prefix,
-                                }
+                                metadata: enrichedMetadata
                             });
                         }
                     }
