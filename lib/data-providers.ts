@@ -417,53 +417,81 @@ class SRNormalizedProvider implements ASRDataProvider {
         const { bucket, prefix } = this.parseS3Source(datasetSource);
 
         try {
-            const command = new ListObjectsV2Command({
-                Bucket: bucket,
-                Prefix: prefix,
-                Delimiter: '/', // List only top-level directories
-            });
-
-            const response = await this.s3Client.send(command);
+            // Load manifest data first (primary source for sample list)
+            const manifestData = await this.loadManifestData(bucket, prefix);
             const samples: ASRSample[] = [];
 
-            // Load manifest data first (with caching)
-            const manifestData = await this.loadManifestData(bucket, prefix);
+            // Use manifest data as primary source (contains all samples beyond 1000 limit)
+            for (const [sampleId, sampleManifestData] of Object.entries(manifestData)) {
+                // Construct full path for the sample directory
+                const samplePath = `${prefix}${sampleId}/`;
 
-            if (response.CommonPrefixes) {
-                for (const commonPrefix of response.CommonPrefixes) {
-                    if (commonPrefix.Prefix) {
-                        // Extract sample directory name from prefix relative to dataset prefix
-                        const relativePath = commonPrefix.Prefix.substring(prefix.length);
-                        if (relativePath && !relativePath.startsWith('/')) {
-                            // This is a sample directory (not empty string)
-                            const sampleId = relativePath.replace(/\/$/, ''); // Remove trailing slash
+                // Create enriched metadata
+                const enrichedMetadata = {
+                    path: samplePath,
+                    bucket,
+                    fullPath: samplePath,
+                    // Enriched data from manifest
+                    quality_score: sampleManifestData.quality_score || null,
+                    avg_words_per_minute: sampleManifestData.avg_words_per_minute || null,
+                    word_count: sampleManifestData.word_count || null,
+                    duration: sampleManifestData.duration || null,
+                };
 
-                            // Get manifest data for this sample
-                            const sampleManifestData = manifestData[sampleId] || {};
+                samples.push({
+                    id: sampleId,
+                    name: sampleId,
+                    metadata: enrichedMetadata
+                });
+            }
 
-                            // Create enriched metadata
-                            const enrichedMetadata = {
-                                path: commonPrefix.Prefix,
-                                bucket,
-                                fullPath: commonPrefix.Prefix,
-                                // Enriched data from manifest
-                                quality_score: sampleManifestData.quality_score || null,
-                                avg_words_per_minute: sampleManifestData.avg_words_per_minute || null,
-                                word_count: sampleManifestData.word_count || null,
-                                duration: sampleManifestData.duration || null,
-                            };
+            console.info(`Found ${samples.length} samples from manifest data in dataset ${bucket}:${prefix}`);
 
-                            samples.push({
-                                id: sampleId,
-                                name: sampleId,
-                                metadata: enrichedMetadata
-                            });
+            // If no samples found in manifest, fall back to S3 listing (legacy behavior)
+            if (samples.length === 0) {
+                console.warn('No samples found in manifest, falling back to S3 directory listing');
+
+                const command = new ListObjectsV2Command({
+                    Bucket: bucket,
+                    Prefix: prefix,
+                    Delimiter: '/', // List only top-level directories
+                });
+
+                const response = await this.s3Client.send(command);
+
+                if (response.CommonPrefixes) {
+                    for (const commonPrefix of response.CommonPrefixes) {
+                        if (commonPrefix.Prefix) {
+                            // Extract sample directory name from prefix relative to dataset prefix
+                            const relativePath = commonPrefix.Prefix.substring(prefix.length);
+                            if (relativePath && !relativePath.startsWith('/')) {
+                                // This is a sample directory (not empty string)
+                                const sampleId = relativePath.replace(/\/$/, ''); // Remove trailing slash
+
+                                // Create basic metadata (no manifest data available)
+                                const basicMetadata = {
+                                    path: commonPrefix.Prefix,
+                                    bucket,
+                                    fullPath: commonPrefix.Prefix,
+                                    quality_score: null,
+                                    avg_words_per_minute: null,
+                                    word_count: null,
+                                    duration: null,
+                                };
+
+                                samples.push({
+                                    id: sampleId,
+                                    name: sampleId,
+                                    metadata: basicMetadata
+                                });
+                            }
                         }
                     }
                 }
+
+                console.info(`Fallback: Found ${samples.length} sample directories in S3 bucket ${bucket}`);
             }
 
-            console.info(`Found ${samples.length} sample directories in S3 bucket ${bucket}`);
             // Cache the results
             SRNormalizedProvider.folderListingCache.set(datasetSource, samples);
             console.info(`Cached folder listing for dataset: ${datasetSource}`);
