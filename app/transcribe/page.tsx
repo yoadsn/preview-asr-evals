@@ -126,7 +126,7 @@ export default function TranscribePage() {
                                 <h2 className="text-xl font-semibold text-gray-900 mb-4">
                                     Upload Audio File
                                 </h2>
-                                <TranscribeUploaderDirect 
+                                <TranscribeUploaderDirect
                                     onUploadComplete={handleUploadComplete}
                                     onUploadError={handleUploadError}
                                     disabled={isSubmitting}
@@ -187,7 +187,7 @@ export default function TranscribePage() {
                         )}
 
                         {/* Results Section */}
-                        {result && ['COMPLETED', 'IN_PROGRESS'].includes(result.status) && segments && (
+                        {result && ['COMPLETED', 'IN_PROGRESS', 'FAILED'].includes(result.status) && segments && (
                             <div className="bg-white shadow rounded-lg p-6">
                                 <h2 className="text-xl font-semibold text-gray-900 mb-4">
                                     Transcription Results
