@@ -13,19 +13,24 @@ export function TranscribeProgress({ jobId, trackingProgress, onStatusUpdateActi
     const [currentStatus, setCurrentStatus] = useState<string>('IN_QUEUE');
     const [delayTime, setDelayTime] = useState<number | null>(null);
     const [executionTime, setExecutionTime] = useState<number | null>(null);
+    const [reconnectCount, setReconnectCount] = useState<number>(0);
+    const [eventSource, setEventSource] = useState<EventSource | null>(null);
 
-    useEffect(() => {
-        if (!trackingProgress) {
-            return;
-        }
-        console.log('setEffect setup of eventSource')
-        const eventSource = new EventSource(`/api/transcribe/stream/${jobId}`);
-
-        eventSource.onopen = () => {
-            console.log('eventSource.onopen')
+    const setupEventSource = () => {
+        // Close existing EventSource if it exists
+        if (eventSource) {
+            console.log('Closing existing EventSource before creating new one');
+            eventSource.close();
         }
 
-        eventSource.onmessage = (event) => {
+        console.log(`Setting up EventSource (reconnect count: ${reconnectCount})`);
+        const newEventSource = new EventSource(`/api/transcribe/stream/${jobId}`);
+
+        newEventSource.onopen = () => {
+            console.log('EventSource opened');
+        }
+
+        newEventSource.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
                 console.log('SSE message:', data);
@@ -34,9 +39,19 @@ export function TranscribeProgress({ jobId, trackingProgress, onStatusUpdateActi
             }
         };
 
-        eventSource.addEventListener('status', (event) => {
+        newEventSource.addEventListener('status', (event) => {
             try {
                 const statusData = JSON.parse(event.data);
+
+                // Check if this is a reconnect signal
+                if (statusData.reconnect) {
+                    console.log('Received reconnect signal in status event, triggering reconnection');
+                    // Increment reconnect count to trigger new EventSource setup
+                    setReconnectCount(prev => prev + 1);
+                    // Don't update status - just trigger reconnection
+                    return;
+                }
+
                 setCurrentStatus(statusData.status);
                 setDelayTime(statusData.delayTime || null);
                 setExecutionTime(statusData.executionTime || null);
@@ -47,7 +62,7 @@ export function TranscribeProgress({ jobId, trackingProgress, onStatusUpdateActi
             }
         });
 
-        eventSource.addEventListener('error', (event: MessageEvent) => {
+        newEventSource.addEventListener('error', (event: MessageEvent) => {
             try {
                 const errorData = JSON.parse(event.data);
                 onErrorAction(errorData.error || 'Unknown error occurred');
@@ -56,21 +71,40 @@ export function TranscribeProgress({ jobId, trackingProgress, onStatusUpdateActi
             }
         });
 
-        eventSource.addEventListener('complete', (event) => {
-            eventSource.close();
+        newEventSource.addEventListener('complete', (event) => {
+            console.log('Received complete event, closing EventSource');
+            newEventSource.close();
         });
 
-        eventSource.onerror = (event) => {
+        newEventSource.onerror = (event) => {
             console.error('SSE connection error:', event);
             onErrorAction('Connection to server lost');
-            eventSource.close();
+            newEventSource.close();
         };
 
+        setEventSource(newEventSource);
+
+        return newEventSource;
+    };
+
+    useEffect(() => {
+        if (!trackingProgress) {
+            // Close EventSource when tracking stops
+            if (eventSource) {
+                console.log('Tracking stopped, closing EventSource');
+                eventSource.close();
+                setEventSource(null);
+            }
+            return;
+        }
+
+        const newEventSource = setupEventSource();
+
         return () => {
-            console.log('setEffect cleanup of eventSource')
-            eventSource.close();
+            console.log('useEffect cleanup, closing EventSource');
+            newEventSource.close();
         };
-    }, [jobId, trackingProgress, onStatusUpdateAction, onErrorAction]);
+    }, [jobId, trackingProgress, reconnectCount, onStatusUpdateAction, onErrorAction]);
 
     const getStatusColor = (status: string) => {
         switch (status) {
@@ -163,6 +197,12 @@ export function TranscribeProgress({ jobId, trackingProgress, onStatusUpdateActi
                     <span className="text-gray-500">Job ID:</span>
                     <p className="font-mono text-xs text-gray-700 break-all">{jobId}</p>
                 </div>
+                {reconnectCount > 0 && (
+                    <div>
+                        <span className="text-gray-500">Reconnections:</span>
+                        <p className="font-medium text-gray-700">{reconnectCount}</p>
+                    </div>
+                )}
                 {delayTime !== null && (
                     <div>
                         <span className="text-gray-500">Queue Time:</span>

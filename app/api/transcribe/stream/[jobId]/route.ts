@@ -22,6 +22,8 @@ export async function GET(
         const stream = new ReadableStream({
             async start(controller) {
                 let pollTimeout: NodeJS.Timeout | null = null;
+                const startTime = Date.now();
+                const MAX_EXECUTION_TIME = 180 * 1000; // 3 minute in milliseconds
 
                 const sendEvent = (data: any, event = 'message') => {
                     // Check if controller is closed directly rather than relying on flag
@@ -48,6 +50,9 @@ export async function GET(
 
                 const pollStatus = async () => {
                     try {
+                        const currentTime = Date.now();
+                        const executionTime = currentTime - startTime;
+
                         const runpodResponse = await fetch(`https://api.runpod.ai/v2/${runpodEndpointId}/stream/${jobId}`, {
                             method: 'GET',
                             headers: {
@@ -66,7 +71,23 @@ export async function GET(
 
                         const statusData = await runpodResponse.json();
 
-                        // Send status update
+                        // Check if we've exceeded the maximum execution time (60 seconds)
+                        if (executionTime >= MAX_EXECUTION_TIME) {
+                            console.log(`Execution time limit reached (${executionTime}ms). Sending reconnect flag...`);
+
+                            // Send status update with reconnect flag - don't call RunPod API redundantly
+                            sendEvent({
+                                ...statusData,
+                                reconnect: true,
+                                executionTime: executionTime
+                            }, 'status');
+
+                            // Don't set timeout - let the client handle reconnection
+                            // Stream will naturally close after this event
+                            return;
+                        }
+
+                        // Send normal status update
                         sendEvent(statusData, 'status');
 
                         // Stop polling if job is completed, failed, cancelled, or timed out
@@ -81,13 +102,10 @@ export async function GET(
                         }
 
                         // Continue polling after 3 seconds, but only if stream hasn't been closed
-
                         pollTimeout = setTimeout(() => {
                             // Double-check before actually calling pollStatus
                             pollStatus();
-
                         }, 3000);
-
 
                     } catch (error) {
                         sendEvent({
