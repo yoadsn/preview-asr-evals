@@ -77,7 +77,7 @@ export default function TranscribePage() {
 
     const handleStatusUpdate = useCallback((statusData: TranscriptionResult) => {
         setResult(statusData);
-        setSegments(currSegments => [...currSegments, ...statusData.stream!.map(result => result.output)]);
+        setSegments(currSegments => [...currSegments, ...statusData.stream!.flatMap(result => result.output)]);
     }, []);
 
     const handleError = useCallback((errorMessage: string) => {
