@@ -5,6 +5,8 @@ import { EvaluationProject } from '@/lib/models';
 import Header from '@/components/header';
 import Link from 'next/link';
 
+export const dynamic = 'force-dynamic';
+
 export default async function Projects() {
   const projects: EvaluationProject[] = await getProjects();
   const isEditable = process.env.UI_EDITABLE === 'true';
