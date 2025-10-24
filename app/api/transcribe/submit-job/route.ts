@@ -1,9 +1,15 @@
 import { put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 
+import { SupportedModels } from '@/lib/transcribe-models';
+
 export async function POST(request: Request): Promise<NextResponse> {
     try {
-        const { audioUrl } = await request.json();
+        const { audioUrl, model = SupportedModels[0] } = await request.json();
+
+        if (!model || !SupportedModels.includes(model)) {
+            return NextResponse.json({ error: 'Unsupported model' }, { status: 400 });
+        }
 
         if (!audioUrl || typeof audioUrl !== 'string') {
             return NextResponse.json({ error: 'Audio URL is required' }, { status: 400 });
@@ -34,7 +40,7 @@ export async function POST(request: Request): Promise<NextResponse> {
             body: JSON.stringify({
                 input: {
                     type: "url",
-                    model: "yoad/yi-whisper-large-v3-ct2",
+                    model,
                     streaming: true,
                     transcribe_args: {
                         language: "yi",

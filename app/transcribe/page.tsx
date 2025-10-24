@@ -5,6 +5,8 @@ import { TranscribeUploaderDirect } from '@/components/transcribe-uploader-direc
 import { TranscribeProgress } from '@/components/transcribe-progress';
 import { TranscribeResults } from '@/components/transcribe-results';
 import Header from '@/components/header';
+import ModelSelection from './model-selection';
+import { SupportedModels } from '@/lib/transcribe-models';
 
 interface TranscriptionJob {
     jobId: string;
@@ -33,6 +35,11 @@ export default function TranscribePage() {
     const [segments, setSegments] = useState<Array<any>>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [selectedModel, setSelectedModel] = useState(SupportedModels[0]);
+
+    const onSelectModel = (model: typeof SupportedModels[0]) => {
+        setSelectedModel(model);
+    };
 
     const handleUploadComplete = (url: string) => {
         setAudioUrl(url);
@@ -57,7 +64,7 @@ export default function TranscribePage() {
             const response = await fetch('/api/transcribe/submit-job', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ audioUrl }),
+                body: JSON.stringify({ audioUrl, model: selectedModel }),
             });
 
             if (!response.ok) {
@@ -140,6 +147,8 @@ export default function TranscribePage() {
                                         <p className="text-xs text-gray-500 mt-1">
                                             Ready for transcription
                                         </p>
+
+                                        <ModelSelection onModelSelect={onSelectModel} selectedModel={selectedModel} />
 
                                         <button
                                             onClick={handleTranscribe}
