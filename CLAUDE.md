@@ -92,7 +92,7 @@ interface AlignmentData {
 ## Environment Variables
 
 ```bash
-DB_DATABASE_URL=          # Neon PostgreSQL connection
+DATABASE_URL=          # Neon PostgreSQL connection
 BLOB_READ_WRITE_TOKEN=    # Vercel Blob storage
 UI_EDITABLE=true         # Enable/disable editing (default: false)
 ```
